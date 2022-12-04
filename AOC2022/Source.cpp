@@ -6,6 +6,10 @@
 #include <string>
 #include <sstream>
 #include <algorithm>
+#include <unordered_set>
+#include <set>
+#include <cctype>
+#include "aoc_utils.h"
 
 namespace Day1 {
 	class Solution {
@@ -118,7 +122,81 @@ namespace Day2 {
 	};
 }
 
+namespace Day3 {
+	class Solution {
+	public:
+		Solution(std::string filename)
+			:
+			filename_(filename)
+		{
+		}
+		char map2val(char ch) {
+			bool is_upper = std::isupper(ch);
+			char offset = 96;
+			if (is_upper) {
+				offset = 64 - 26;
+			}
+			return ch - offset;
+		}
+		int ProcessData() {
+			std::ifstream in(filename_);
+			std::string str;
+			int priority_count = 0;
+			while (std::getline(in, str)) {
+				size_t slen = str.size();
+				std::unordered_set<char> bag1;
+				for (size_t i = 0; i < slen/2; ++i) {
+					bag1.insert(map2val(str[i]));
+				}
+				for (size_t i = slen/2; i < slen ; ++i) {
+					auto search = bag1.find(map2val(str[i]));
+					if (search != bag1.end()) {
+						priority_count += *search;
+						break;
+					}
+				}
+			}
+			return priority_count;
+		}
+		void LoadData(std::vector<std::set<char>>& dataset) {
+			std::ifstream in(filename_);
+			std::string str;
+			int priority_count = 0;
+			while (std::getline(in, str)) {
+				std::set<char> bag;
+				for (char ch : str) {
+					bag.insert(map2val(ch));
+				}
+				dataset.push_back(bag);
+			}
+		}
+		void Solve() {
+			// Part1
+			int count1 = ProcessData();
+			std::cout << "Count, part 1: " << count1 <<  '\n';
+		
+			// Part2
+			std::vector<std::set<char>> dataset;
+			LoadData(dataset);
+			int count2 = 0;
+			for (size_t i = 0; i < dataset.size(); i += 3) {
+				auto intersection1 = aoc::setIntersection(dataset[i], dataset[i+1]);
+				auto intersection2 = aoc::setIntersection(intersection1, dataset[i + 2]);
+				for (auto val : intersection2) {
+					count2 += int(val);
+				}
+				
+			}
+			std::cout << "Count, part 2: " << count2;
+			std::cin.get();
+		}
+	private:
+		std::string filename_;
+
+	};
+}
+
 int main() {
-	Day2::Solution("day2_input.txt").Solve();
+	Day3::Solution("day3_input.txt").Solve();
 	return 0;
 }

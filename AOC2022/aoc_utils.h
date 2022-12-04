@@ -5,15 +5,16 @@
 #include <iostream>
 #include <map>
 #include <type_traits>
+#include <set>
 
 namespace aoc 
 {
-	std::pair<int, int> i2coord(int index, size_t w, size_t h) {
+	/*std::pair<int, int> i2coord(int index, size_t w, size_t h) {
 		return { index % w, index / h };
 	}
 	int coord2i(std::pair<int, int> coord, size_t w, size_t h) {
 		return w * coord.second + coord.first;
-	}
+	}*/
 	void LoadGridInput(std::string filepath, std::vector<std::vector<int>>& grid, std::map<int, int>& cellvalues, bool convertChar2Int)
 	{
 		int x = 0;
@@ -42,4 +43,15 @@ namespace aoc
 		}
 		return;
 	}
+	
+	template<typename Type>
+	auto setIntersection(std::set<Type> set0, std::set<Type> set1)
+	{
+		std::set<Type> intersection;
+		for (auto value : set0)
+			if (set1.find(value) != set1.end()) {
+				intersection.insert(value);
+			}
+		return intersection;
+	};
 }
