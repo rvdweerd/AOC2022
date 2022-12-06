@@ -196,7 +196,64 @@ namespace Day3 {
 	};
 }
 
+namespace Day4 {
+	class Solution {
+	public:
+		Solution(std::string filename)
+			:
+			filename_(filename)
+		{
+		}
+		std::pair<int,int> ProcessData() {
+			std::ifstream in(filename_);
+			std::string str;
+			
+			int counter1 = 0;
+			int counter2 = 0;
+			while (std::getline(in, str)) {
+				
+				std::string delimiter1 = ",";
+				std::string delimiter2 = "-";
+
+				std::string token1 = str.substr(0, str.find(delimiter1));
+				std::string token2 = str.substr(str.find(delimiter1)+1);
+				
+				std::string token1a = token1.substr(0, token1.find(delimiter2));
+				std::string token1b = token1.substr(token1.find(delimiter2)+1);
+				std::pair<int, int> range1 = { stoi(token1a), stoi(token1b) };
+				
+				std::string token2a = token2.substr(0, token2.find(delimiter2));
+				std::string token2b = token2.substr(token2.find(delimiter2) + 1);
+				std::pair<int, int> range2 = { stoi(token2a), stoi(token2b) };
+				
+				// Check containment
+				if (((range1.first >= range2.first) && (range1.second <= range2.second)) ||
+					((range1.first <= range2.first) && (range1.second >= range2.second))) {
+					counter1++;
+				}
+				// Check overlap
+				if ( range1.second >= range2.first && range1.first <= range2.second) {
+					counter2++;
+				}
+
+			}
+			return { counter1, counter2 };
+		}
+		void Solve() {
+			// Part1
+			std::pair<int,int> counters = ProcessData();
+			std::cout << "Counter1: " << counters.first << '\n';
+			std::cout << "Counter2: " << counters.second << '\n';
+			std::cin.get();
+		}
+	private:
+		std::string filename_;
+
+	};
+}
+
+
 int main() {
-	Day3::Solution("day3_input.txt").Solve();
+	Day4::Solution("day4_input.txt").Solve();
 	return 0;
 }
