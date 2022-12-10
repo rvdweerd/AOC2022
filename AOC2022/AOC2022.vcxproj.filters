@@ -40,5 +40,8 @@
     <Text Include="day5_input.txt">
       <Filter>Source Files</Filter>
     </Text>
+    <Text Include="day6_input.txt">
+      <Filter>Source Files</Filter>
+    </Text>
   </ItemGroup>
 </Project>

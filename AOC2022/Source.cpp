@@ -380,8 +380,70 @@ namespace Day5 {
 	};
 }
 
+namespace Day6 {
+	class Solution {
+	public:
+		Solution(std::string filename)
+			:
+			filename_(filename)
+		{
+			std::ifstream in(filename_);
+			std::string str;
+			std::getline(in, signal);
+		}
+		size_t get_marker_idx(size_t seq_len)
+		{
+			size_t num_unique = 1;
+			size_t ptrL = 0;
+			size_t ptrR = 0;
+			while (num_unique != seq_len)
+			{
+				ptrR++;
+				for (size_t idx = ptrL; idx < ptrR; idx++)
+				{
+					if (signal[idx] == signal[ptrR])
+					{
+						ptrL = idx + 1;
+						num_unique = ptrR - ptrL;
+						break;
+					}
+				}
+				num_unique++;
+			}
+			return ptrR + 1;
+		}
+		void Solve() {
+			std::cout << "Start of packet marker index : " << get_marker_idx(4);
+			std::cout << "Start of message marker index: " << get_marker_idx(14);
+			std::cin.get();
+		}
+	private:
+		std::string filename_;
+		std::string signal;
+	};
+}
+
+
+
+namespace DayX {
+	class Solution {
+	public:
+		Solution(std::string filename)
+			:
+			filename_(filename)
+		{
+		}
+		void Solve() {
+			std::cin.get();
+		}
+	private:
+		std::string filename_;
+
+	};
+}
+
 
 int main() {
-	Day5::Solution("day5_input.txt").Solve();
+	Day6::Solution("day6_input.txt").Solve();
 	return 0;
 }
