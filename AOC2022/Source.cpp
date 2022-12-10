@@ -11,6 +11,7 @@
 #include <cctype>
 #include <stack>
 #include <queue>
+#include <ranges>
 #include <assert.h>
 #include "aoc_utils.h"
 
@@ -570,6 +571,135 @@ namespace Day7 {
 	};
 }
 
+namespace Day8 {
+	class Solution {
+	public:
+		Solution(std::string filename)
+			:
+			filename_(filename)
+		{
+			std::ifstream in(filename_);
+			std::string str;
+			while (std::getline(in, str)) {
+				std::vector<int> line;
+				for (char c : str)
+				{
+					line.push_back(int(c-48));
+				}
+				field.push_back(line);
+			}
+			width = field[0].size();
+			height = field.size();
+			visible= std::vector<std::vector<int>>(height, std::vector<int>(width, 0));
+			std::set<char> set;
+			visible_info = std::vector<std::vector<std::pair<int, std::set<char>>>>(height, std::vector<std::pair<int, std::set<char>>>(width, { 0, set}));
+		}
+		void add_visibility(size_t row, size_t col, char direction)
+		{
+			visible[row][col] = 1;
+			visible_info[row][col].first++;
+			visible_info[row][col].second.insert(direction);
+		}
+		void Solve() {
+			// scan rows top down
+			for (size_t row=0; row<height; row++)
+			{
+				// scan columns left-right
+				add_visibility(row, 0, 'L');
+				size_t mark_left = 0;
+				size_t highest = field[row][0];
+				for (size_t col = 1; col < width; col++)
+				{
+					if (field[row][col] > highest)
+					{
+						add_visibility(row, col, 'L');
+						highest = field[row][col];
+					}
+					else
+					{
+						if (field[row][col] < highest && (highest == 9))
+						{
+							mark_left = col;
+							break;
+						}
+					}
+				}
+				// scan columns right-left
+				highest = field[row][width-1];
+				add_visibility(row, width - 1, 'R');
+				for (size_t col = width-2; col > mark_left; col--)
+				{
+					if (field[row][col] > highest)
+					{
+						add_visibility(row, col, 'R');
+						highest = field[row][col];
+					}
+					else
+					{
+						if (field[row][col] < highest && (highest == 9)) break;
+					}
+				}
+			}
+			// scan columns left to right
+			for (size_t col = 0; col < width; col++)
+			{
+				// scan rows top-down
+				add_visibility(0, col, 'T');
+				size_t mark_top = 0;
+				size_t highest = field[0][col];
+				for (size_t row = 1; row < height; row++)
+				{
+					if (field[row][col] > highest)
+					{
+						add_visibility(row, col, 'T');
+						highest = field[row][col];
+					}
+					else
+					{
+						if (field[row][col] < highest && (highest == 9))
+						{
+							mark_top = row;
+							break;
+						}
+					}
+				}
+				// scan rows bottom-up
+				add_visibility(height-1, col, 'B');
+				highest = field[height-1][col];
+				for (size_t row = height - 2; row > mark_top; row--)
+				{
+					if (field[row][col] > highest)
+					{
+						add_visibility(row, col, 'B');
+						highest = field[row][col];
+					}
+					else
+					{
+						if (field[row][col] < highest && (highest == 9)) break;
+					}
+				}
+			}
+			size_t count = 0;
+			for (const auto& row : visible) {
+				for (const auto& col : row) {
+					count += col;
+					std::cout << ((col == 1) ? ('*') : ('.'));
+				}
+				std::cout << '\n';
+			}
+			std::cout << "Number of visible trees :" << count;
+			std::cin.get();
+		}
+	private:
+		std::string filename_;
+		std::vector<std::vector<int>> field;
+		size_t width;
+		size_t height;
+		std::vector<std::vector<std::pair<int, std::set<char>>>> visible_info;
+		std::vector<std::vector<int>> visible;
+		
+	};
+}
 
 namespace DayX {
 	class Solution {
@@ -590,6 +720,6 @@ namespace DayX {
 
 
 int main() {
-	Day7::Solution("day7_input.txt").Solve();
+	Day8::Solution("day8_input.txt").Solve();
 	return 0;
 }
