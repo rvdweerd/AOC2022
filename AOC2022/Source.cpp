@@ -423,6 +423,152 @@ namespace Day6 {
 	};
 }
 
+namespace Day7 {
+	// To hell with memory leaks :-)
+	struct directory
+	{
+		directory(std::string name)
+			:
+			name_(name)
+		{}
+		std::string name_;
+		std::string full_pathname_;
+		directory* parent_ = nullptr;
+		std::map<std::string, directory*> subdirmap;
+		std::map<std::string, size_t> files_;
+		size_t dirsize_ = 0;
+	};
+	class Solution {
+	public:
+		Solution(std::string filename)
+			:
+			filename_(filename)
+		{
+			std::ifstream in(filename_);
+			std::string str;
+			while (std::getline(in, str)) {
+				commands.push_back(str);
+			}
+		}
+		size_t process_ls_command(directory* curr_dir, size_t idx) {
+			while (idx < commands.size())
+			{
+				std::vector<std::string> lsinfo = aoc::parse_string(commands[idx],' ');
+				if (lsinfo[0] == "$")
+				{
+					return idx - 1;
+				}
+				else if (lsinfo[0] == "dir")
+				{
+					// Insert new directory in the index
+					if (curr_dir->subdirmap.find(lsinfo[1]) == curr_dir->subdirmap.end())
+					{
+						directory* newdir_ptr = new directory(lsinfo[1]);
+						curr_dir->subdirmap[lsinfo[1]] = newdir_ptr;
+						curr_dir->subdirmap[lsinfo[1]]->full_pathname_ = curr_dir->full_pathname_ + "/" + lsinfo[1];
+						dirmap[curr_dir->subdirmap[lsinfo[1]]->full_pathname_] = newdir_ptr;
+						curr_dir->subdirmap[lsinfo[1]]->parent_ = curr_dir;
+						curr_dir->subdirmap[lsinfo[1]]->subdirmap[".."] = curr_dir;
+
+					}
+				}
+				else
+				{
+					// Insert a new file in the index
+					if (curr_dir->files_.find(lsinfo[1]) == curr_dir->files_.end())
+					{
+						// Process new fileinfo in current directory
+						size_t filesize = (size_t)stoi(lsinfo[0]);
+							curr_dir->files_[lsinfo[1]] = filesize;
+						curr_dir->dirsize_ += curr_dir->files_[lsinfo[1]];
+						
+						// Increase size of all parent directories with added filesize
+						directory* iter = curr_dir;
+						while (iter->parent_ != nullptr)
+						{
+							iter = iter->parent_;
+							iter->dirsize_ += filesize;
+						}
+					}
+					else
+					{
+						assert(false);
+					}
+				}
+				idx++;
+			}
+			return idx;
+		}
+		directory* process_cd_command(directory* curr_dir, std::string dirname)
+		{
+			if (dirname == "/")
+			{
+				return rt;
+			}
+			else if (curr_dir->subdirmap.find(dirname) != curr_dir->subdirmap.end())
+			{
+				return curr_dir->subdirmap[dirname];
+			}
+			return curr_dir;
+		}
+		void Solve() {
+			rt = new directory("/");
+			rt->full_pathname_ = "/";
+			directory* curr_dir = rt;
+			dirmap["/"] = rt;
+			
+			//assert(commands[0] == "$ cd /");
+
+			for (size_t idx = 0; idx < commands.size(); ++idx)
+			{
+				std::vector<std::string> command = aoc::parse_string(commands[idx], ' ');
+				if (command[0] == "$" && command[1] == "ls")
+				{
+					idx = process_ls_command(curr_dir, idx + 1);
+				}
+				else if (command[0] == "$" && command[1] == "cd")
+				{
+					curr_dir = process_cd_command(curr_dir, command[2]);
+				}
+			}
+			size_t counter = 0;
+			for (auto n : dirmap)
+			{
+				if (n.second->dirsize_ < 100000)
+				{
+					counter += n.second->dirsize_;
+				}
+				std::cout << n.second->full_pathname_ <<", size = " << n.second->dirsize_ << '\n';
+			}
+			std::cout << "Sum of sizes of all directories <100000 : " << counter;
+			std::cout << "\n___\n";
+
+			size_t dsize_total = 70000000;
+			size_t dsize_req   = 30000000;
+			size_t dsize_curr  = rt->dirsize_;
+			size_t dsize_avail = dsize_total - dsize_curr;
+			size_t dsize_to_be_deleted = dsize_req - dsize_avail;
+			size_t min_size = dsize_curr;
+			for (auto n : dirmap)
+			{
+				if (n.second->dirsize_ >= dsize_to_be_deleted)
+				{
+					if (n.second->dirsize_ < min_size)
+					{
+						min_size = n.second->dirsize_;
+					}
+				}
+			}
+			std::cout << "Size of smallest directory that can be deleted: " << min_size;
+			std::cin.get();
+		}
+	private:
+		std::string filename_;
+		std::vector<std::string> commands;
+		directory* rt = nullptr;
+		std::map<std::string, directory*> dirmap;
+	};
+}
 
 
 namespace DayX {
@@ -444,6 +590,6 @@ namespace DayX {
 
 
 int main() {
-	Day6::Solution("day6_input.txt").Solve();
+	Day7::Solution("day7_input.txt").Solve();
 	return 0;
 }
