@@ -9,6 +9,9 @@
 #include <unordered_set>
 #include <set>
 #include <cctype>
+#include <stack>
+#include <queue>
+#include <assert.h>
 #include "aoc_utils.h"
 
 namespace Day1 {
@@ -252,8 +255,133 @@ namespace Day4 {
 	};
 }
 
+namespace Day5 {
+	struct instruction
+	{
+		size_t _num;
+		size_t _from;
+		size_t _to;
+	};
+	class Solution {
+	public:
+		Solution(std::string filename)
+			:
+			filename_(filename)
+		{}
+		void ReadStackLine(std::string& str, std::vector<std::stack<char>>& stacks)
+		{
+			size_t stack_nr = 0;
+			for (size_t idx = 1; idx < str.size(); idx += 4)
+			{
+				char container = str[idx];
+				if (container != ' ')
+				{
+					stacks[stack_nr].push(container);
+				}
+				stack_nr++;
+			}
+		}
+		void LoadData() 
+		{
+			std::ifstream in(filename_);
+			std::string str;
+			std::vector<std::stack<char>> stacks_loaded;
+			int seq = 0;
+			while (std::getline(in, str)) {
+				if (seq == 0)
+				{
+					// Initialize stacks and read first line
+					size_t num_stacks = (str.size() - 3)/4 + 1;
+					stacks_loaded.resize(num_stacks);
+					stacks_method1.resize(num_stacks);
+					stacks_method2.resize(num_stacks);
+					ReadStackLine(str, stacks_loaded);
+					seq = 1;
+				}
+				else if(seq == 1)
+				{
+					// Read stack layouts
+					if (str[0] == '[')
+					{
+						ReadStackLine(str, stacks_loaded);
+					}
+					else
+					{
+						seq = 2;
+						// Empty queues into stacks (correct the reversed ordering)
+						assert (stacks_loaded.size() == stacks_method1.size());
+						for (size_t i=0; i<stacks_loaded.size(); ++i)
+						{
+							while (!stacks_loaded[i].empty())
+							{
+								stacks_method1[i].push(stacks_loaded[i].top());
+								stacks_method2[i].push(stacks_loaded[i].top());
+								stacks_loaded[i].pop();
+							}
+						}
+						std::getline(in, str);
+					}
+				}
+				else if (seq == 2)
+				{
+					// Read instructions
+					std::vector<std::string> pt = aoc::parse_string(str, ' ');
+					instructions.push_back({ (size_t)stoi(pt[1]), (size_t)stoi(pt[3]), (size_t)stoi(pt[5]) });
+				}
+			}
+		}		
+		
+		void Solve() 
+		{	
+			LoadData();
+			// Method 1
+			for (const auto& instr : instructions) 
+			{
+				for (size_t i = 0; i < instr._num; i++)
+				{
+					char item = stacks_method1[instr._from-1].top();
+					stacks_method1[instr._from-1].pop();
+					stacks_method1[instr._to-1].push(item);
+				}
+			}
+			for (const std::stack<char>& stk : stacks_method1)
+			{
+				std::cout << stk.top();
+			}
+			std::cout<<'\n';
+
+			// Method 2
+			for (const auto& instr : instructions)
+			{
+				std::stack<char> temp;
+				for (size_t i = 0; i < instr._num; i++)
+				{
+					char item = stacks_method2[instr._from - 1].top();
+					stacks_method2[instr._from - 1].pop();
+					temp.push(item);
+				}
+				while (!temp.empty())
+				{
+					stacks_method2[instr._to-1].push(temp.top());
+					temp.pop();
+				}
+			}
+			for (const std::stack<char>& stk : stacks_method2)
+			{
+				std::cout << stk.top();
+			}
+			std::cin.get();
+		}
+	private:
+		std::string filename_;
+		std::vector<std::stack<char>> stacks_method1; 
+		std::vector<std::stack<char>> stacks_method2;
+		std::vector<instruction> instructions;
+	};
+}
+
 
 int main() {
-	Day4::Solution("day4_input.txt").Solve();
+	Day5::Solution("day5_input.txt").Solve();
 	return 0;
 }

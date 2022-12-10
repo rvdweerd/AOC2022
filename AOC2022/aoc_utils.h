@@ -44,6 +44,21 @@ namespace aoc
 		return;
 	}
 	
+	std::vector<std::string> parse_string(const std::string& str, char delim)
+	{
+		std::vector<std::string> parsed_text;
+		size_t last = 0;
+		size_t next = 0;
+		while ((next = str.find(' ', last)) != std::string::npos)
+		{
+			parsed_text.push_back(str.substr(last, next - last));
+			last = next + 1;
+		}
+		parsed_text.push_back(str.substr(last));
+		return parsed_text;
+	}
+
+
 	template<typename Type>
 	auto setIntersection(std::set<Type> set0, std::set<Type> set1)
 	{
