@@ -701,6 +701,88 @@ namespace Day8 {
 	};
 }
 
+namespace Day9 {
+
+	class Solution {
+	public:
+		Solution(std::string filename)
+			:
+			filename_(filename)
+		{
+			std::ifstream in(filename_);
+			std::string str;
+			while (std::getline(in, str)) {
+				std::vector<std::string> cmd = aoc::parse_string(str, ' ');
+				commands.push_back({ cmd[0][0], stoi(cmd[1]) });
+			}
+		}
+		void ProcessMove(aoc::Vei2& posH, aoc::Vei2& posT)
+		{
+			aoc::Vei2 posT_orig = posT;
+			aoc::Vei2 dpos = posH - posT;
+			int maxd = std::max(std::abs(dpos.x), std::abs(dpos.y));
+			if (maxd > 1) // T needs to follow H 
+			{
+				if (std::abs(dpos.x) + std::abs(dpos.y) == 2)
+				{
+					posT += (dpos / 2);
+				}
+				else
+				{
+					if (std::abs(dpos.x) == 1)
+					{
+						posT += aoc::Vei2{ dpos.x, dpos.y / 2 };
+					}
+					else if (std::abs(dpos.x) == 2 && std::abs(dpos.y) == 2)
+					{
+						posT += dpos / 2;
+					}
+					else
+					{
+						posT += aoc::Vei2{ dpos.x / 2, dpos.y };
+					}
+				}
+			}
+		}
+		void SolveWithKnots(size_t num_knots) {
+			std::set<std::string> visitedT = { {"0,0"} };
+			std::vector<aoc::Vei2> knots = std::vector<aoc::Vei2>(num_knots, { 0,0 });
+			for (const auto& cmd : commands)
+			{
+				for (size_t i = 0; i < cmd.second; i++)
+				{
+					knots[0] += moves[cmd.first]; // head knot moves according to command
+					for (size_t k = 0; k < knots.size() - 1; k++)
+					{
+						ProcessMove(knots[k], knots[k + 1]);
+					}
+					std::string posT_hash = std::to_string(knots.back().x) + "," + std::to_string(knots.back().y);
+					visitedT.insert(posT_hash);
+				}
+			}
+			std::string posT_hash = std::to_string(posT.x) + "," + std::to_string(posT.y);
+			std::cout << "Rope with " << num_knots << " knots, tail unique cells visited:" << visitedT.size() << '\n';
+		}
+		void Solve()
+		{
+			SolveWithKnots(2);
+			SolveWithKnots(10);
+			std::cin.get();
+		}
+	private:
+		std::string filename_;
+		std::vector<std::pair<char, int>> commands;
+		aoc::Vei2 posH = { 0,0 };
+		aoc::Vei2 posT = { 0,0 };
+		std::map<char, aoc::Vei2> moves = {
+			{'U',{ 0,-1} },
+			{'D',{ 0, 1} },
+			{'L',{-1, 0} },
+			{'R',{ 1, 0} }
+		};
+	};
+}
+
 namespace Day10 {
 	class Solution {
 	public:
@@ -827,6 +909,6 @@ namespace DayX {
 
 
 int main() {
-	Day10::Solution("day10_input.txt").Solve();
+	Day9::Solution("day9_input.txt").Solve();
 	return 0;
 }
