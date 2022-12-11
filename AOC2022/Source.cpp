@@ -701,6 +701,113 @@ namespace Day8 {
 	};
 }
 
+namespace Day10 {
+	class Solution {
+	public:
+		Solution(std::string filename)
+			:
+			filename_(filename)
+		{
+			std::ifstream in(filename_);
+			std::string str;
+			while (std::getline(in, str)) {
+				commands.push_back(str);
+			}
+		}
+		int value_at_time(int t)
+		{
+			// Binary search the timeline vector to get the correct index
+			size_t l = 0;
+			size_t r = timeline.size() - 1;
+			size_t m = l + r / 2;
+			while (true)
+			{
+				int test = timeline[m];
+				if (timeline[m] == t)
+				{
+					return values[m-1];
+				}
+				else if (timeline[m] > t)
+				{
+					r = m;//check
+					m = l + (r-l) / 2;
+				}
+				else if (timeline[m] < t)
+				{
+					if (timeline[m + 1] < t)
+					{
+						l = m;
+						m = l + (r-l) / 2;
+					}
+					/*else if (timeline[m + 1] == t)
+					{
+						return values[m + 1];
+					}*/
+					else return values[m];
+				}
+			}
+		}
+		void Solve() {
+			timeline.push_back(0);
+			int marker = 0;
+			values.push_back(1);
+			for (const auto& line : commands)
+			{
+				std::vector<std::string> command = aoc::parse_string(line, ' ');
+				if (command[0] == "noop")
+				{
+					marker++;
+				}
+				else
+				{
+					marker += 2;
+					timeline.push_back(marker);
+					values.push_back(values.back() + stoi(command[1]));
+				}
+			}
+			// Ensure array of noobs at end of signal gets processed
+			timeline.push_back(marker);
+			values.push_back(values.back());
+
+			std::vector<int> evals = { 20,60,100,140,180,220 };
+			int acc = 0;
+			for (int e : evals) {
+				int val = value_at_time(e);
+				std::cout << "Value at time " << e << ": " << val << '\n';
+				acc += val*e;
+			}
+			std::cout << "----\nProduct: " << acc << "\n\n";
+
+			for (int cycle = 1; cycle < 241; cycle++)
+			{
+				if (cycle == 237) {
+					int k = 0;
+				}
+				int pos = (cycle-1)%40 ;
+				int mpos = value_at_time(cycle);
+				if (mpos == pos || mpos - 1 == pos || mpos + 1 == pos)
+				{
+					std::cout << '#';
+				}
+				else
+				{
+					std::cout << '.';
+				}
+				if (cycle % 40 == 0)
+				{
+					std::cout << '\n';
+				}
+			}
+			std::cin.get();
+		}
+	private:
+		std::string filename_;
+		std::vector<std::string> commands;
+		std::vector<int> timeline;
+		std::vector<int> values;
+	};
+}
+
 namespace DayX {
 	class Solution {
 	public:
@@ -720,6 +827,6 @@ namespace DayX {
 
 
 int main() {
-	Day8::Solution("day8_input.txt").Solve();
+	Day10::Solution("day10_input.txt").Solve();
 	return 0;
 }

@@ -134,6 +134,7 @@
     <ClInclude Include="aoc_utils.h" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="day10_input.txt" />
     <Text Include="day1_input.txt" />
     <Text Include="day2_input.txt" />
     <Text Include="day3_input.txt" />
