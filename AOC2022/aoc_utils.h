@@ -82,7 +82,8 @@ namespace aoc
 	};
 	typedef _Vec2<int> Vei2;
 
-	void LoadGridInput(std::string filepath, std::vector<std::vector<int>>& grid, std::map<int, int>& cellvalues, bool convertChar2Int)
+	
+	void LoadGridInput(std::string filepath, std::vector<std::vector<char>>& grid, std::map<int, char>& cellvalues, bool convertChar2Int)
 	{
 		int x = 0;
 		int y = 0;
@@ -90,7 +91,7 @@ namespace aoc
 		std::ifstream in(filepath);
 		while (!in.eof())
 		{
-			std::vector<int> lineinput;
+			std::vector<char> lineinput;
 			for (char ch = in.get(); ch != '\n' && !in.eof(); ch = in.get())
 			{
 				int entry = ch;

@@ -890,6 +890,138 @@ namespace Day10 {
 	};
 }
 
+namespace Day12 {
+	class Solution {
+	public:
+		Solution(std::string filename)
+			:
+			filename_(filename)
+		{
+			int x = 0;
+			int y = 0;
+			//int width = 0;
+			std::ifstream in(filename_);
+			while (!in.eof())
+			{
+				std::vector<char> lineinput;
+				for (char ch = in.get(); ch != '\n' && !in.eof(); ch = in.get())
+				{
+					int entry = ch;
+					if (entry == 'a') {
+						lowpoints.push_back({ x, y });
+					}
+					if (entry == 'S') {
+						startpos = { x,y }; 
+						entry = 'a';
+						lowpoints.push_back({ x, y });
+					}
+					if (entry == 'E') { 
+						endpos = { x,y }; 
+						entry = 'z';
+					}
+					lineinput.push_back(entry);
+					cellvalues[x + y * width] = entry;
+					x++;
+					if (x > width) {
+						width = x;
+					}
+				}
+				grid.push_back(lineinput);
+				x = 0;
+				y++;
+			}
+			assert (width == (int)grid[0].size());
+			height = (int)grid.size();
+			startval = x + y * width;
+			endval = x + y * width;
+		}
+		std::string Hash(const aoc::Vei2& pos) const
+		{
+			return std::to_string(pos.x) + "," + std::to_string(pos.y);
+		}
+		bool IsValidPos(const aoc::Vei2& pos) const
+		{
+			if (pos.x < 0) return false;
+			if (pos.x > width - 1) return false;
+			if (pos.y < 0) return false;
+			if (pos.y > height - 1) return false;
+			return true;
+		}
+		std::vector<aoc::Vei2> GetNeighbors(aoc::Vei2& currpos)
+		{
+			std::vector<aoc::Vei2> neighbors;
+			for (auto& move : moves) {
+				aoc::Vei2 newpos = currpos + move.second;
+				if (IsValidPos(newpos)) {
+					neighbors.push_back(newpos);
+				}
+			}
+			return neighbors;
+		}
+		size_t SolveFromAtoB(aoc::Vei2 spos, aoc::Vei2 epos) {
+			assert(queue.size() == 0);
+			assert(visited.size() == 0);
+			size_t move_count = 0;
+			aoc::Vei2 currpos = spos;
+			queue.push({ currpos, move_count });
+			visited.insert(Hash(currpos));
+			while (!queue.empty()) {
+				currpos = queue.front().first;
+				move_count = queue.front().second;
+				queue.pop();
+				if (currpos == epos) {
+					break;
+				}
+				std::vector<aoc::Vei2> neighbors = GetNeighbors(currpos);
+				for (const auto& n : neighbors) {
+					std::string nhash = Hash(n);
+					char diff = grid[n.y][n.x] - grid[currpos.y][currpos.x];
+					if (diff <= 1 && visited.find(nhash) == visited.end()) {
+						queue.push({ n, move_count + 1 });
+						visited.insert(nhash);
+					}
+				}
+			}
+			visited.clear();
+			if (queue.empty()) return 1e9;
+			while (!queue.empty()) queue.pop();
+			return move_count;
+		}
+		void Solve() {
+			std::cout << "Num steps: " << SolveFromAtoB(startpos, endpos) << '\n';
+
+			size_t minsteps = 1e9;
+			for (auto lp : lowpoints) { // could optimize by using dynamic programming here...
+				size_t steps = SolveFromAtoB(lp, endpos);
+				//std::cout << "lp (" << lp.x << "," << lp.y << "), steps: " << steps << '\n';
+				if (steps < minsteps) minsteps = steps;
+			}
+			std::cout << "Min steps: " << minsteps << '\n';
+			std::cin.get();
+		}
+	private:
+		std::string filename_;
+		std::vector<std::vector<char>> grid;
+		std::map<int, char> cellvalues;
+		std::vector<aoc::Vei2> lowpoints;
+		aoc::Vei2 startpos;
+		aoc::Vei2 endpos;
+		int width;
+		int height;
+		int startval;
+		int endval;
+		std::set<std::string> visited;
+		std::queue<std::pair<aoc::Vei2,size_t>> queue; // queue entries: { position, move_counter }
+		std::map<char, aoc::Vei2> moves = {
+			{'U',{ 0,-1} },
+			{'D',{ 0, 1} },
+			{'L',{-1, 0} },
+			{'R',{ 1, 0} }
+		};
+	};
+}
+
+
 namespace DayX {
 	class Solution {
 	public:
@@ -909,6 +1041,6 @@ namespace DayX {
 
 
 int main() {
-	Day9::Solution("day9_input.txt").Solve();
+	Day12::Solution("day12_input.txt").Solve();
 	return 0;
 }
