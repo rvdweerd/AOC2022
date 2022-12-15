@@ -1021,6 +1021,89 @@ namespace Day12 {
 	};
 }
 
+namespace Day15 {
+	class Solution {
+	public:
+		Solution(std::string filename)
+			:
+			filename_(filename)
+		{
+			std::ifstream in(filename_);
+			std::string str;
+			while (std::getline(in, str)) {
+				auto parsed = aoc::parse_string(str, '=');
+				int sensorX = stoi(aoc::parse_string(parsed[1], ',')[0]);
+				int sensorY = stoi(aoc::parse_string(parsed[2], ':')[0]);
+				int beaconX = stoi(aoc::parse_string(parsed[3], ',')[0]);
+				int beaconY = stoi(parsed[4]);
+				input.push_back({sensorX,sensorY,beaconX,beaconY});
+			}
+		}
+		void Solve() {
+			Solve1();
+			Solve2();
+		}
+		void Solve1() {
+			int LINE = 2000000;
+			for (const std::vector<int>& line : input)
+			{
+				int distance = std::abs(line[0] - line[2]) + std::abs(line[1] - line[3]);
+				if (std::abs(LINE - line[1]) <= distance ) {
+					int y = LINE;
+					int offsetY = std::abs(y - line[1]);
+					int offsetX = std::abs(std::abs(offsetY) - distance);
+					for (int x = line[0] - offsetX; x <= line[0] + offsetX; x++)
+					{
+						map[y][x] = true;
+					}
+					if (line[3]==LINE) map[line[3]].erase(line[2]);
+				}
+			}
+			std::cout << "Answer part 1: " << map[LINE].size() << "\n[Press enter]\n";
+			std::cin.get();
+		}
+		void Solve2() {
+			int LOW = 0;
+			int HIGH = 4000000;
+			std::cout << "Processing input";
+			std::vector<aoc::segments> segvec = std::vector<aoc::segments>(HIGH-LOW,aoc::segments(LOW, HIGH));
+			for (const std::vector<int>& line : input)
+			{
+				std::cout << ".";
+				int distance = std::abs(line[0] - line[2]) + std::abs(line[1] - line[3]);
+				for (int y = line[1]-distance; y <= line[1]+distance; y++)
+				{
+					int offsetY = std::abs(y - line[1]);
+					if (y >= LOW && y < HIGH)
+					{
+						int offsetX = std::abs(std::abs(offsetY) - distance);
+						int xmin = line[0] - offsetX;
+						int xmax = line[0] + offsetX;
+						if ((xmin >= LOW && xmin <= HIGH) || (xmax >= LOW && xmax <= HIGH) || (xmin <= LOW && xmax >= HIGH))
+						{
+							segvec[y].cut(xmin, xmax);
+						}
+					}
+				}
+			}
+			for (size_t y = 0; y < segvec.size(); ++y) {
+				if (segvec[y].segmap.size()>0)
+				{
+					int x = segvec[y].segmap[0].first;
+					std::cout << "\nAnswer part 2: (x=" << x << ",y=" << y << "), tuning freq:" << (long long)x * 4000000 + (long long)y << "\n[Press enter]\n";
+				}
+			}
+			std::cin.get();
+		}
+
+	private:
+		std::string filename_;
+		std::vector<std::vector<int>> input;
+		std::map<int, std::map<int, bool>> map;
+
+	};
+}
+
 
 namespace DayX {
 	class Solution {
@@ -1041,6 +1124,6 @@ namespace DayX {
 
 
 int main() {
-	Day12::Solution("day12_input.txt").Solve();
+	Day15::Solution("day15_input.txt").Solve();
 	return 0;
 }

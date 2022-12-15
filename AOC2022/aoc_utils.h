@@ -9,6 +9,9 @@
 
 namespace aoc 
 {
+	using ULL = unsigned long long;
+	auto PosHash = [](int pos_0, int pos_1)->ULL { return (ULL(pos_0) << 32 | pos_1); };
+	
 	/*std::pair<int, int> i2coord(int index, size_t w, size_t h) {
 		return { index % w, index / h };
 	}
@@ -81,7 +84,7 @@ namespace aoc
 		T y;
 	};
 	typedef _Vec2<int> Vei2;
-
+	
 	
 	void LoadGridInput(std::string filepath, std::vector<std::vector<char>>& grid, std::map<int, char>& cellvalues, bool convertChar2Int)
 	{
@@ -117,7 +120,7 @@ namespace aoc
 		std::vector<std::string> parsed_text;
 		size_t last = 0;
 		size_t next = 0;
-		while ((next = str.find(' ', last)) != std::string::npos)
+		while ((next = str.find(delim, last)) != std::string::npos)
 		{
 			parsed_text.push_back(str.substr(last, next - last));
 			last = next + 1;
@@ -136,5 +139,52 @@ namespace aoc
 				intersection.insert(value);
 			}
 		return intersection;
+	};
+	
+	class segments
+	{
+	public:
+		segments(int low, int high)
+			:
+			segmap({ {low, high} })
+		{}
+		void cut(int low, int high)
+		{
+			std::vector<std::pair<int, int>> segmap_new;
+			for (std::pair<int, int> seg : segmap)
+			{
+				if (high >= seg.first && low <= seg.second) // overlap
+				{
+					if (low <= seg.first && high >= seg.second) // eliminate segment
+					{
+						continue;
+					}
+					if (low > seg.first && high < seg.second) // split
+					{
+						//if (seg.first != low) {
+						segmap_new.push_back({ seg.first,low-1 });
+						//}
+						//if (high != seg.second) {
+						segmap_new.push_back({ high+1, seg.second });
+						//}
+					}
+					else if (low < seg.first) // cut left
+					{
+						segmap_new.push_back({ high+1, seg.second });
+					}
+					else if (high > seg.second) // cut right
+					{
+						segmap_new.push_back({ seg.first, low-1 });
+					}
+				}
+				else // no overlap, keep segment
+				{
+					segmap_new.push_back(seg);
+				}
+			}
+			segmap = std::move(segmap_new);
+		}
+	public:
+		std::vector<std::pair<int, int>> segmap;
 	};
 }
