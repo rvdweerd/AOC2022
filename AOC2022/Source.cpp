@@ -983,14 +983,14 @@ namespace Day12 {
 				}
 			}
 			visited.clear();
-			if (queue.empty()) return 1e9;
+			if (queue.empty()) return 1000000000;
 			while (!queue.empty()) queue.pop();
 			return move_count;
 		}
 		void Solve() {
 			std::cout << "Num steps: " << SolveFromAtoB(startpos, endpos) << '\n';
 
-			size_t minsteps = 1e9;
+			size_t minsteps = 1000000000;
 			for (auto lp : lowpoints) { // could optimize by using dynamic programming here...
 				size_t steps = SolveFromAtoB(lp, endpos);
 				//std::cout << "lp (" << lp.x << "," << lp.y << "), steps: " << steps << '\n';
@@ -1104,6 +1104,94 @@ namespace Day15 {
 	};
 }
 
+namespace Day16 {
+	class Solution {
+	public:
+		Solution(std::string filename)
+			:
+			filename_(filename)
+		{
+			LoadData();
+		}
+		void LoadData(){
+			std::ifstream in(filename_);
+			std::string str;
+			std::map<std::string, int> release_rates;
+			std::map<std::string, std::set<std::string>> edges;
+			while (std::getline(in, str)) {
+				auto parsed = aoc::parse_string(str, ' ');
+				auto parsed1 = aoc::parse_string(parsed[4], '=');
+				auto parsed2 = aoc::parse_string(parsed1[1], ';');
+				//auto parsed3 = aoc::parse_string(str, 's');
+				
+				std::string node_name = parsed[1];
+				int rate = stoi(parsed2[0]);
+				std::string target = "";
+				std::set<std::string> targets;
+				for (size_t k = 9; k < parsed.size(); k++)
+				{
+					for (size_t i = 0; i < parsed[k].size(); i++) {
+						if (parsed[k][i] != ' ' && parsed[k][i] != ',') {
+							target += parsed[k][i];
+						}
+						if (target.size() == 2) {
+							targets.insert(target);
+							target = "";
+						}
+					}
+				}
+				release_rates[node_name] = rate;
+				edges[node_name] = targets;
+			}
+			g = aoc::Graph(release_rates,edges);
+		}
+		int GetMaxFlow(aoc::Graph& g) {
+			int max_flow = 0;
+			for (auto target_valve : g.reachable_valves[g.currnode]) {
+				int accumulated_flow = 0;
+				int time_left = g.T - g.t;
+				int action_timespan = target_valve.second + 1;
+				if (time_left <= action_timespan) {
+					continue; // no time left to open this valve, continue to the next
+				}
+				if (g.node_rates[target_valve.first] > 0) {
+					std::string currnode = g.currnode;
+					int rate = g.node_rates[target_valve.first];
+					int added_flow = rate * (time_left - action_timespan);
+					
+					// adjust the graph to reflect the action taken
+					g.currnode = target_valve.first;
+					g.t += action_timespan;
+					g.node_rates[target_valve.first] = 0; // set flow to zero, indicating value has been opened
+					
+					accumulated_flow = added_flow + GetMaxFlow(g);
+					
+					// revert the graph (to continue the recursion)
+					g.currnode = currnode;
+					g.t -= action_timespan;
+					g.node_rates[target_valve.first] = rate; // reset flow
+				}
+				if (accumulated_flow > max_flow) {
+					max_flow = accumulated_flow;
+				}
+			}
+			return max_flow;
+		}
+		void Solve() {
+			auto max_flow = GetMaxFlow(g);
+			std::cout << "Max flow: " << max_flow;
+			std::cin.get();
+		}
+	private:
+		std::string filename_;
+		aoc::Graph g;
+		std::map<int, std::vector<std::string>> paths;
+		std::vector < std::string> path;
+		int max_depth = 0;
+		int max_score = 0;
+	};
+}
+
 
 namespace DayX {
 	class Solution {
@@ -1124,6 +1212,6 @@ namespace DayX {
 
 
 int main() {
-	Day15::Solution("day15_input.txt").Solve();
+	Day16::Solution("day16_input.txt").Solve();
 	return 0;
 }

@@ -21,7 +21,8 @@ namespace aoc
 	template <typename T>
 	class _Vec2 {
 	public:
-		_Vec2() {}
+		_Vec2() 
+		{}
 		_Vec2(T x, T y)
 			:
 			x(x),
@@ -129,6 +130,15 @@ namespace aoc
 		return parsed_text;
 	}
 
+	std::string remove_substring(std::string original, const std::string& substring)
+	{
+		std::size_t ind = original.find(substring); // Find the starting position of substring in the string
+		if (ind != std::string::npos) {
+			original.erase(ind, substring.length()); // erase function takes two parameter, the starting index in the string from where you want to erase characters and total no of characters you want to erase.
+			//std::cout << original << "\n";
+		}
+		return original;
+	}
 
 	template<typename Type>
 	auto setIntersection(std::set<Type> set0, std::set<Type> set1)
@@ -187,4 +197,93 @@ namespace aoc
 	public:
 		std::vector<std::pair<int, int>> segmap;
 	};
+
+	std::string ToBin(unsigned long long int n, int min_digits = 64)
+	{
+		std::string bin_str;
+		for (int count = 0; n != 0 || count < min_digits; n >>= 1, count++)
+		{
+			bin_str.push_back(bool(n & 0b1) ? '1' : '0');
+		}
+		std::reverse(bin_str.begin(), bin_str.end());
+		return bin_str;
+	}
+	
+	class Graph {
+	
+	public:
+		Graph()
+		{}
+		Graph(std::map<std::string, int> release_rates, std::map<std::string, std::set<std::string>> edges)
+			:
+			releasenodes_str(64,'0'),
+			t(0),
+			T(30),
+			node_rates(release_rates),
+			edges(edges)
+		{
+			for (auto n : node_rates)
+			{
+				nodes.push_back(n.first);
+			}
+			std::sort(nodes.begin(), nodes.end());
+			for (size_t i = 0; i < nodes.size(); ++i) {
+				if (node_rates[nodes[i]] > 0) {
+					releasenodes_str[63-i] = '1';
+					releasenodes = releasenodes | (ULL(1) << i);
+				}
+				node2idx[nodes[i]] = i;
+			}
+			MapReachableValves();
+			// switch node BB off
+			/*auto test1 = ToBin(releasenodes);
+			ULL offnode = (ULL(1) << 1);
+			auto test2 = ToBin(offnode);
+			ULL negoffnode = ~offnode;
+			auto test3 = ToBin(negoffnode);
+			releasenodes &= negoffnode;
+			auto test4 = ToBin(releasenodes);*/
+		}
+	private:
+		void MapReachableValves() {
+			// create all from-to distances in the graph to valves with positie flowrates
+			for (auto node : nodes) {
+				std::map<std::string, int> reachable;
+				std::set<std::string> visited;
+				std::queue<std::pair<std::string, int>> queue;
+				queue.push({ node,0 });
+				while (!queue.empty()) {
+					std::string currnode = queue.front().first;
+					int steps = queue.front().second;
+					queue.pop();
+					//if (visited.find(currnode) == visited.end()) 
+					{
+						//visited.insert(currnode);
+						for (auto t : edges[currnode]) {
+							if (visited.find(t) == visited.end()) {
+								visited.insert(t);
+								if (node_rates[t] > 0) { // only map valves with positive flow
+									reachable[t] = steps + 1;
+								}
+								queue.push({ t,steps + 1 });
+							}
+						}
+					}
+				}
+				reachable_valves[node] = reachable;
+			}
+		}
+	public:
+		std::string currnode = "AA";
+		ULL releasenodes=0;
+		std::string releasenodes_str;
+		int t;
+		int T;
+		std::vector<std::string> nodes;
+		std::map<std::string, size_t> node2idx;
+		std::map<std::string, int> node_rates;
+		std::map<std::string, std::set<std::string>> edges;
+		std::map<std::string, std::map<std::string, int>> reachable_valves;
+	};
 }
+
