@@ -1145,7 +1145,7 @@ namespace Day16 {
 			}
 			g = aoc::Graph(release_rates,edges);
 		}
-		int GetMaxFlow(aoc::Graph& g) {
+		int GetMaxFlow(aoc::Graph& g, int acc) {
 			int max_flow = 0;
 			for (auto target_valve : g.reachable_valves[g.currnode]) {
 				int accumulated_flow = 0;
@@ -1164,9 +1164,29 @@ namespace Day16 {
 					g.t += action_timespan;
 					g.node_rates[target_valve.first] = 0; // set flow to zero, indicating value has been opened
 					
-					accumulated_flow = added_flow + GetMaxFlow(g);
+					// Keep track of visited valves using a 64 bitcode
+					path += target_valve.first;
+					aoc::ULL switch_on = (aoc::ULL(1) << g.node2idx[target_valve.first]);
+					visited |= switch_on;
+					//visited_str = aoc::ToBin(visited);
+
+					// Recurse
+					accumulated_flow = added_flow + GetMaxFlow(g, acc+added_flow);
+					//std::cout << visited_str << ", " << acc+added_flow << ", " << path << '\n';
 					
+					// Store max attainable flow release yields for all possible routings
+					if (flowmap.find(visited) == flowmap.end() || acc + added_flow > flowmap[visited]) {
+						flowmap[visited] = acc + added_flow;
+					}
+
 					// revert the graph (to continue the recursion)
+					visited &= ~switch_on;
+					visited_str = aoc::ToBin(visited);
+					if (path.size() > 1) {
+						path.pop_back();
+						path.pop_back();
+					}
+				
 					g.currnode = currnode;
 					g.t -= action_timespan;
 					g.node_rates[target_valve.first] = rate; // reset flow
@@ -1177,16 +1197,59 @@ namespace Day16 {
 			}
 			return max_flow;
 		}
-		void Solve() {
-			auto max_flow = GetMaxFlow(g);
-			std::cout << "Max flow: " << max_flow;
+		void Solve1() {
+			g.T = 30;
+			auto max_flow = GetMaxFlow(g,0);
+			std::cout << "Max flow: " << max_flow << std::endl;
 			std::cin.get();
 		}
+		void Solve2() {
+			clear(); // reset relevant member data
+			g.T = 26;
+			auto max_flow = GetMaxFlow(g, 0);
+			std::cout << "Max flow: " << max_flow << std::endl;
+			//print_flowmap();
+
+			int maxscore = 0;
+			aoc::ULL l1 = 0;
+			aoc::ULL l2 = 0;
+			for (auto e1 : flowmap) {
+				for (auto e2 : flowmap) {
+					if (((e1.first & e2.first) == 0) && e1!=e2) {
+						maxscore = std::max(e1.second + e2.second, maxscore);
+						l1 = e1.first;
+						l2 = e2.first;
+					}
+				}
+			}
+			std::cout << "Maxscore: " << maxscore << '\n';
+			std::cout << aoc::ToBin(l1) << '\n' << aoc::ToBin(l2);
+			std::cin.get();
+		}
+		void Solve() {
+			Solve1();
+			Solve2();
+		}
+
 	private:
+		void clear() {
+			flowmap.clear();
+			visited = 0;
+			path = "";
+			std::string visited_str = std::string('0', 64);
+		}
+		void print_flowmap() {
+			for (auto e : flowmap) {
+				std::cout << aoc::ToBin(e.first) << "," << e.second << '\n';
+			}
+		}
 		std::string filename_;
 		aoc::Graph g;
-		std::map<int, std::vector<std::string>> paths;
-		std::vector < std::string> path;
+		//std::map<int, std::vector<std::string>> paths;
+		std::map<aoc::ULL, int> flowmap;
+		std::string path;
+		unsigned long long int visited = 0;
+		std::string visited_str = std::string('0', 64);
 		int max_depth = 0;
 		int max_score = 0;
 	};
