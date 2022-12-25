@@ -1168,28 +1168,28 @@ namespace Day16 {
 					path += target_valve.first;
 					aoc::ULL switch_on = (aoc::ULL(1) << g.node2idx[target_valve.first]);
 					visited |= switch_on;
-					//visited_str = aoc::ToBin(visited);
+//visited_str = aoc::ToBin(visited);
 
-					// Recurse
-					accumulated_flow = added_flow + GetMaxFlow(g, acc+added_flow);
-					//std::cout << visited_str << ", " << acc+added_flow << ", " << path << '\n';
-					
-					// Store max attainable flow release yields for all possible routings
-					if (flowmap.find(visited) == flowmap.end() || acc + added_flow > flowmap[visited]) {
-						flowmap[visited] = acc + added_flow;
-					}
+// Recurse
+accumulated_flow = added_flow + GetMaxFlow(g, acc + added_flow);
+//std::cout << visited_str << ", " << acc+added_flow << ", " << path << '\n';
 
-					// revert the graph (to continue the recursion)
-					visited &= ~switch_on;
-					visited_str = aoc::ToBin(visited);
-					if (path.size() > 1) {
-						path.pop_back();
-						path.pop_back();
-					}
-				
-					g.currnode = currnode;
-					g.t -= action_timespan;
-					g.node_rates[target_valve.first] = rate; // reset flow
+// Store max attainable flow release yields for all possible routings
+if (flowmap.find(visited) == flowmap.end() || acc + added_flow > flowmap[visited]) {
+	flowmap[visited] = acc + added_flow;
+}
+
+// revert the graph (to continue the recursion)
+visited &= ~switch_on;
+visited_str = aoc::ToBin(visited);
+if (path.size() > 1) {
+	path.pop_back();
+	path.pop_back();
+}
+
+g.currnode = currnode;
+g.t -= action_timespan;
+g.node_rates[target_valve.first] = rate; // reset flow
 				}
 				if (accumulated_flow > max_flow) {
 					max_flow = accumulated_flow;
@@ -1199,7 +1199,7 @@ namespace Day16 {
 		}
 		void Solve1() {
 			g.T = 30;
-			auto max_flow = GetMaxFlow(g,0);
+			auto max_flow = GetMaxFlow(g, 0);
 			std::cout << "Max flow: " << max_flow << std::endl;
 			std::cin.get();
 		}
@@ -1215,7 +1215,7 @@ namespace Day16 {
 			aoc::ULL l2 = 0;
 			for (auto e1 : flowmap) {
 				for (auto e2 : flowmap) {
-					if (((e1.first & e2.first) == 0) && e1!=e2) {
+					if (((e1.first & e2.first) == 0) && e1 != e2) {
 						maxscore = std::max(e1.second + e2.second, maxscore);
 						l1 = e1.first;
 						l2 = e2.first;
@@ -1255,6 +1255,172 @@ namespace Day16 {
 	};
 }
 
+namespace Day19 {
+	struct RobotAccounting {
+		int num;
+		// cost in [#ORE, #CLA, #OBS] 
+		aoc::units ORErobot = aoc::units(0, 0, 0, 0);
+		aoc::units CLArobot = aoc::units(0, 0, 0, 0);
+		aoc::units OBSrobot = aoc::units(0, 0, 0, 0);
+		aoc::units GEOrobot = aoc::units(0, 0, 0, 0);
+
+	};
+	struct Assets {
+		aoc::units wallet = aoc::units(0, 0, 0, 0);
+		aoc::units robots = aoc::units(0, 0, 0, 0);
+	};
+	class Solution 
+	{
+	public:
+		Solution(std::string filename)
+			:
+			filename_(filename)
+		{
+			LoadData();
+		}
+		void LoadData() {
+			std::ifstream in(filename_);
+			std::string str;
+			std::map<std::string, int> release_rates;
+			std::map<std::string, std::set<std::string>> edges;
+			int count = 1;
+			while (std::getline(in, str)) {
+				auto parsed = aoc::parse_string(str, ' ');
+				RobotAccounting pricelist;
+				pricelist.num = count;
+				pricelist.ORErobot.ORE = stoi(parsed[6]);
+				pricelist.CLArobot.ORE = stoi(parsed[12]);
+				pricelist.OBSrobot.ORE = stoi(parsed[18]);
+				pricelist.OBSrobot.CLA = stoi(parsed[21]);
+				pricelist.GEOrobot.ORE = stoi(parsed[27]);
+				pricelist.GEOrobot.OBS = stoi(parsed[30]);
+				blueprints.push_back(pricelist);
+				count++;
+			}
+		}
+		aoc::units GetBuyingOptions(const aoc::units& wallet, const RobotAccounting& pricelist) const {
+			return { pricelist.ORErobot / wallet,  pricelist.CLArobot / wallet, pricelist.OBSrobot / wallet, pricelist.GEOrobot / wallet };
+		}
+		Assets MakePurchase(const aoc::units& purchase, Assets assets, const RobotAccounting& pricelist) const {
+			assets.wallet -= pricelist.ORErobot * purchase.ORE;
+			assets.wallet -= pricelist.CLArobot * purchase.CLA;
+			assets.wallet -= pricelist.OBSrobot * purchase.OBS;
+			assets.wallet -= pricelist.GEOrobot * purchase.GEO;
+			assets.wallet += assets.robots;
+			assets.robots += purchase;
+			return assets;
+		}
+		void ExploreAllTrajectories(Assets assets, const RobotAccounting& pricelist, int t, aoc::units previous_purchase_options, bool  previous_purchase_made) {
+			counter++;
+			if (t == 32) {
+				if (max_geodes.find(pricelist.num) == max_geodes.end()) {
+					max_geodes[pricelist.num] = assets.wallet.GEO;
+				}
+				else {
+					max_geodes[pricelist.num] = std::max(max_geodes[pricelist.num], assets.wallet.GEO);
+				}
+				return;
+			}
+			aoc::units purchase_options = GetBuyingOptions(assets.wallet, pricelist);
+			
+			// If a GEO can be bought, take this option exclusively (so return immediately)
+			if (purchase_options.GEO > 0) {
+				Assets new_assets = MakePurchase({ 0,0,0,1 }, assets, pricelist);
+				ExploreAllTrajectories(new_assets, pricelist, t + 1, purchase_options, true);
+				return;
+			}
+			
+			// If any other robot can be bought:
+			if (purchase_options.ORE > 0) {
+				bool silly_purchase = (!previous_purchase_made && previous_purchase_options.ORE > 0) || assets.robots.ORE > max_ore_needed;
+				if (!silly_purchase) {
+					Assets new_assets = MakePurchase({ 1,0,0,0 }, assets, pricelist);
+					ExploreAllTrajectories(new_assets, pricelist, t + 1, purchase_options, true);
+				}
+			}
+			if (purchase_options.CLA > 0) {
+				bool silly_purchase = (!previous_purchase_made && previous_purchase_options.CLA > 0) || assets.robots.CLA > max_cla_needed;
+				if (!silly_purchase) {
+					Assets new_assets = MakePurchase({ 0,1,0,0 }, assets, pricelist);
+					ExploreAllTrajectories(new_assets, pricelist, t + 1, purchase_options, true);
+				}
+			}
+			if (purchase_options.OBS > 0) {
+				bool silly_purchase = (!previous_purchase_made && previous_purchase_options.OBS > 0) || assets.robots.OBS > max_obs_needed;
+				if (!silly_purchase) {
+					Assets new_assets = MakePurchase({ 0,0,1,0 }, assets, pricelist);
+					ExploreAllTrajectories(new_assets, pricelist, t + 1, purchase_options, true);
+				}
+			}
+			// Purchase nothing
+			Assets new_assets = MakePurchase({ 0,0,0,0 }, assets, pricelist);
+			ExploreAllTrajectories(new_assets, pricelist, t + 1, purchase_options, false);
+
+			return;
+		}
+		void Test(const RobotAccounting& pricelist) const {
+			aoc::units wallet = aoc::units(0, 0, 0, 0);
+			aoc::units owned = aoc::units(1, 0, 0, 0);
+			Assets assets = { wallet, owned };
+			std::vector<aoc::units> purchases;
+			purchases.push_back({ 0, 0, 0, 0 });//1
+			purchases.push_back({ 0, 0, 0, 0 });
+			purchases.push_back({ 0, 1, 0, 0 });
+			purchases.push_back({ 0, 0, 0, 0 });
+			purchases.push_back({ 0, 1, 0, 0 });//5
+			purchases.push_back({ 0, 0, 0, 0 });
+			purchases.push_back({ 0, 1, 0, 0 });
+			purchases.push_back({ 0, 0, 0, 0 });
+			purchases.push_back({ 0, 0, 0, 0 });
+			purchases.push_back({ 0, 0, 0, 0 });//10
+			purchases.push_back({ 0, 0, 1, 0 });
+			purchases.push_back({ 0, 1, 0, 0 });
+			purchases.push_back({ 0, 0, 0, 0 });
+			purchases.push_back({ 0, 0, 0, 0 });
+			purchases.push_back({ 0, 0, 1, 0 });//15
+			for (auto p : purchases) {
+				wallet -= pricelist.ORErobot * p.ORE;
+				wallet -= pricelist.CLArobot * p.CLA;
+				wallet -= pricelist.OBSrobot * p.OBS;
+				wallet -= pricelist.GEOrobot * p.GEO;
+				wallet += owned;
+				owned += p;
+			}
+			return;
+		}
+		void Solve() {
+			//Test(blueprints[0]);
+			for (const RobotAccounting& pricelist : blueprints) {
+				max_ore_needed = std::max(std::max(pricelist.ORErobot.ORE, pricelist.CLArobot.ORE), std::max(pricelist.OBSrobot.ORE, pricelist.GEOrobot.ORE));
+				max_cla_needed = std::max(std::max(pricelist.ORErobot.CLA, pricelist.CLArobot.CLA), std::max(pricelist.OBSrobot.CLA, pricelist.GEOrobot.CLA));
+				max_obs_needed = std::max(std::max(pricelist.ORErobot.OBS, pricelist.CLArobot.OBS), std::max(pricelist.OBSrobot.OBS, pricelist.GEOrobot.OBS));
+				aoc::units owned = aoc::units(1, 0, 0, 0);
+				aoc::units wallet = aoc::units(0, 0, 0, 0);
+				Assets assets = { wallet, owned };
+				previous_buying_options = { false,false,false,false };
+				ExploreAllTrajectories(assets, pricelist, 0, {0,0,0,0}, false);
+			}
+			int sumprod = 0;
+			for (auto e : max_geodes) {
+				std::cout << e.first << ',' << e.second << '\n';
+				sumprod += e.first * e.second;
+			}
+			std::cout << "Total score: " << sumprod;
+			std::cin.get();
+		}
+	private:
+		int counter=0;
+		std::vector<RobotAccounting> blueprints;
+		std::string filename_;
+		std::map<int, int> max_geodes;
+		bool have_been_saving = false;
+		std::vector<bool> previous_buying_options = {false,false,false,false};
+		RobotAccounting purchase_unit = RobotAccounting{ 0, { 1,0,0,0 }, { 1,0,0,0 }, { 1,0,0,0 }, { 1,0,0,0 } };
+		int max_ore_needed = 0;
+		int max_cla_needed = 0;
+		int max_obs_needed = 0;
+	};
+}
 
 namespace DayX {
 	class Solution {
@@ -1275,6 +1441,6 @@ namespace DayX {
 
 
 int main() {
-	Day16::Solution("day16_input.txt").Solve();
+	Day19::Solution("day19_input.txt").Solve();
 	return 0;
 }

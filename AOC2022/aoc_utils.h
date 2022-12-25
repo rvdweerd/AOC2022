@@ -18,6 +18,69 @@ namespace aoc
 	int coord2i(std::pair<int, int> coord, size_t w, size_t h) {
 		return w * coord.second + coord.first;
 	}*/
+
+	class units {
+	public:
+		units()
+		{}
+		units(int ore, int clay, int obs, int geo)
+			:
+			ORE(ore),
+			CLA(clay),
+			OBS(obs),
+			GEO(geo)
+		{}
+	public:
+		int ORE = 0;
+		int CLA = 0;
+		int OBS = 0;
+		int GEO = 0;
+		int operator/(const units& rhs) const
+		{
+			int m1 = ORE == 0 ? 999999999 : rhs.ORE / ORE;
+			int m2 = CLA == 0 ? 999999999 : rhs.CLA / CLA;
+			int m3 = OBS == 0 ? 999999999 : rhs.OBS / OBS;
+			int m4 = GEO == 0 ? 999999999 : rhs.GEO / GEO;
+			return std::min(std::min(m1,m2),std::min(m3,m4));
+		}
+		units& operator*=(int rhs)
+		{
+			ORE *= rhs;
+			CLA *= rhs;
+			OBS *= rhs;
+			GEO *= rhs;
+			return *this;
+		}
+		units operator*(int rhs) const
+		{
+			return units(*this) *= rhs;
+		}
+		units& operator-=(const units& rhs)
+		{
+			ORE -= rhs.ORE;
+			CLA -= rhs.CLA;
+			OBS -= rhs.OBS;
+			GEO -= rhs.GEO;
+			return *this;
+		}
+		units& operator+=(const units& rhs)
+		{
+			ORE += rhs.ORE;
+			CLA += rhs.CLA;
+			OBS += rhs.OBS;
+			GEO += rhs.GEO;
+			return *this;
+		}
+		units operator+(const units& rhs) const
+		{
+			return units(*this) += rhs;
+		}
+		units operator-(const units& rhs) const
+		{
+			return units(*this) -= rhs;
+		}
+	};
+
 	template <typename T>
 	class _Vec2 {
 	public:
