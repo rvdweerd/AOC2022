@@ -14,6 +14,7 @@
 #include <ranges>
 #include <assert.h>
 #include "aoc_utils.h"
+#include <stdlib.h>
 
 namespace Day1 {
 	class Solution {
@@ -1422,6 +1423,448 @@ namespace Day19 {
 	};
 }
 
+namespace Day22 {
+	class Solution {
+	public:
+		Solution(std::string filename)
+			:
+			filename_(filename)
+		{}
+		void Solve() {
+			LoadData();
+			Init_part1();
+			Run();
+
+			LoadData();
+			Init_part2();
+			Run();
+			std::cin.get();
+		}
+	private:
+		void clear() {
+			x_pos = 0;
+			y_pos = 0;
+			field.clear();
+			steps.clear();
+			turns.clear();
+			first_xcells.clear();
+			first_ycells.clear();
+			last_ycells.clear();
+			cubes.clear();
+		}
+		void LoadData() {
+			std::ifstream in(filename_);
+			std::string str;
+			bool firstline = true;
+			size_t linecount = 0;
+			clear();
+			while (std::getline(in, str)) {
+				if (str.size() > 0) {
+					max_width = std::max(max_width, str.size());
+					std::vector<char> line;
+					bool newline = true;
+					for (size_t i = 0; i < str.size(); i++) {
+						if (firstline || first_ycells.size() == i) {
+							first_ycells.push_back(99999);
+							last_ycells.push_back(99999);
+						}
+						if (str[i] == '.') {
+							if (newline) {
+								first_xcells.push_back(i);
+								newline = false;
+							}
+							line.push_back('.');
+							if (firstline) {
+								x_pos = i;
+								firstline = false;
+							}
+							if (first_ycells[i] == 99999) {
+								first_ycells[i] = linecount;
+							}
+							last_ycells[i] = linecount;
+						}
+						else if (str[i] == '#') {
+							if (newline) {
+								first_xcells.push_back(i);
+								newline = false;
+							}
+							line.push_back('#');
+							if (first_ycells[i] == 99999) {
+								first_ycells[i] = linecount;
+							}
+							last_ycells[i] = linecount;
+						}
+						else {
+							line.push_back(' ');
+						}
+
+					}
+					field.push_back(line);
+					linecount++;
+				}
+				else {
+					std::getline(in, str);
+					std::string number;
+					for (char c : str) {
+						if (c == 'R' || c == 'L') {
+							steps.push_back(stoi(number));
+							number.clear();
+							turns.push_back(c);
+						}
+						else {
+							number += c;
+						}
+					}
+					steps.push_back(stoi(number));
+				}
+			}
+			// Determine size of cubes
+			for (size_t i = 0; i < first_xcells.size(); i++) {
+				cube_size = std::min(cube_size, int(field[i].size() - first_xcells[i]));
+			}
+			for (size_t i = 0; i < max_width; i++) {
+				cube_size = std::min(cube_size, int(last_ycells[i]) - int(first_ycells[i]) + 1);
+			}
+
+			// Load cubemap
+			for (size_t y = 0; y < field.size(); y += cube_size) {
+				for (size_t x = 0; x < field[y].size(); x += cube_size) {
+					Cube c = GetCube(y, x);
+					cubes[c.ID] = c;
+				}
+			}
+
+
+
+			// Init pos
+			//y_pos = 5;
+			//x_pos = 11;
+			//direction = directions::R; 
+			//y_pos = 11;
+			//x_pos = 10;
+			//direction = directions::D;
+			//y_pos = 4;
+			//x_pos = 6;
+			//direction = directions::U;
+		}
+		enum directions {
+			R = 0,
+			D,
+			L,
+			U
+		};
+		struct Cube {
+			int ID;
+			size_t tl_y;
+			size_t tl_x;
+		};
+		struct Relcoords {
+			Cube cube;
+			size_t y_rel;
+			size_t x_rel;
+		};
+		struct Abscoords {
+			size_t y;
+			size_t x;
+		};
+		struct Morphinfo {
+			int target_cube;
+			char side;
+			directions dir;
+			bool reverse;
+		};
+		void DrawField() {
+			system("CLS");
+			for (size_t row = 0; row < field.size(); row++) {
+				for (size_t col = 0; col < field[row].size(); col++) {
+					if (row == y_pos && col == x_pos) {
+						std::cout << '*';
+					}
+					else {
+						std::cout << field[row][col];
+					}
+				}
+				std::cout << std::endl;
+			}
+		}
+		std::pair<Relcoords, directions> ExploreOutOfBounds(Relcoords rc, directions d) {
+			size_t rel_x = 0;
+			size_t rel_y = 0;
+			std::string id = std::to_string(rc.cube.ID) + std::to_string(d);
+			size_t offset = 0;
+			if (d == directions::R || d == directions::L) {
+				offset = rc.y_rel;
+			}
+			else {
+				offset = rc.x_rel;
+			}
+			auto target_info = wrapmap[id];
+			if (target_info.side == 'T') {
+				rel_y = 0;
+				if (target_info.reverse) {
+					rel_x = cube_size - offset - 1;
+				}
+				else {
+					rel_x = offset;
+				}
+			}
+			else if (target_info.side == 'D') {
+				rel_y = cube_size - 1;
+				if (target_info.reverse) {
+					rel_x = cube_size - offset - 1;
+				}
+				else {
+					rel_x = offset;
+				}
+			}
+			else if (target_info.side == 'L') {
+				rel_x = 0;
+				if (target_info.reverse) {
+					rel_y = cube_size - offset - 1;
+				}
+				else {
+					rel_y = offset;
+				}
+			}
+			else if (target_info.side == 'R') {
+				rel_x = cube_size - 1;
+				if (target_info.reverse) {
+					rel_y = cube_size - offset - 1;
+				}
+				else {
+					rel_y = offset;
+				}
+			}
+			Relcoords tco = { cubes[wrapmap[id].target_cube], rel_y, rel_x };
+			return { tco, wrapmap[id].dir };
+		}
+		bool MoveOutOfBounds() {
+			auto relco = GetRelCoord({ y_pos, x_pos });
+			std::pair<Relcoords, directions> new_state = ExploreOutOfBounds(relco, direction);
+			Abscoords test = GetAbsCoord(new_state.first);
+			if (field[test.y][test.x] == '.') {
+				y_pos = test.y;
+				x_pos = test.x;
+				direction = new_state.second;
+				return true;
+			}
+			return false;
+		}
+		void Walk(int num_steps) {
+			for (size_t i = 0; i < num_steps; i++) {
+				if (direction == directions::R) {
+					if (x_pos < field[y_pos].size() - 1) {
+						if (field[y_pos][x_pos + 1] == '#') {
+							return;
+						}
+						else if (field[y_pos][x_pos + 1] == '.') {
+							x_pos += 1;
+						}
+					}
+					else { // manage out of bounds to the right
+						if (!MoveOutOfBounds()) {
+							return;
+						}
+					}
+				}
+			
+				else if (direction == directions::L) {
+					if (x_pos == 0 || field[y_pos][x_pos - 1] == ' ') {
+						if (!MoveOutOfBounds()) {
+							return;
+						}
+					}
+					else if (field[y_pos][x_pos - 1] == '.') {
+						x_pos -= 1;
+					}
+					else {
+						//draw_field();
+						return;
+					}
+				}
+			
+				else if (direction == directions::D) {
+					if (y_pos < last_ycells[x_pos]) {
+						if (field[y_pos + 1][x_pos] == '#') {
+							//draw_field();
+							return;
+						}
+						else if (field[y_pos + 1][x_pos] == '.') {
+							y_pos += 1;
+						}
+					}
+					else { // manage out of bounds to the right
+						if (!MoveOutOfBounds()) {
+							return;
+						}
+					}
+					
+				}
+				else if (direction == directions::U) {
+					if (y_pos == 0 || field[y_pos - 1][x_pos] == ' ') {
+						if (!MoveOutOfBounds()) {
+							return;
+						}
+					}
+					else if (field[y_pos - 1][x_pos] == '.') {
+						y_pos -= 1;
+					}
+					else {
+						return;
+					}
+				}
+				else {
+					assert(false);
+				}
+			}
+		}
+		void Turn(char turndir) {
+			if (turndir == 'R') {
+				direction = directions((direction + 1) % 4);
+			}
+			else {
+				if (direction == 0) {
+					direction = directions::U;
+				}
+				else {
+					direction = directions(direction - 1);
+				}
+			}
+		}
+		Cube GetCube(size_t y, size_t x) {
+			size_t tl_y = 0;
+			size_t tl_x = 0;
+			size_t cuberow = y / cube_size;
+			size_t cubecol = x / cube_size;
+			int cubeID = -1;
+			for (size_t row = 0; row <= cuberow; row++) {
+				for (size_t col = 0; col < field[0 + cube_size * row].size() / cube_size; col++) {
+					cubeID++;
+					if (row == cuberow && col == cubecol) {
+						tl_y = cuberow * cube_size;
+						tl_x = cubecol * cube_size;
+						break;
+					}
+				}
+			}
+			return { cubeID, tl_y, tl_x };
+		}
+		Relcoords GetRelCoord(Abscoords ac) {
+			return { GetCube(ac.y, ac.x), ac.y - (ac.y / cube_size) * cube_size, ac.x - (ac.x / cube_size) * cube_size};
+		}
+		Abscoords GetAbsCoord(Relcoords rc) {
+			return { rc.cube.tl_y + rc.y_rel, rc.cube.tl_x + rc.x_rel };
+		}
+		void Init_test() {
+			// works on test input only
+			assert(GetCube(2, 9).ID  == 2);
+			assert(GetCube(5, 9).ID  == 5);
+			assert(GetCube(5, 1).ID  == 3);
+			assert(GetCube(9, 5).ID  == 7);
+			assert(GetCube(9, 13).ID == 9);
+			auto test1 = GetRelCoord({ 2, 9 });
+			auto test2 = GetRelCoord({ 5, 5 });
+			auto test3 = GetRelCoord({ 1, 1 });
+			auto test4 = GetRelCoord({ 11, 13 });
+			auto test5 = GetAbsCoord(test1);
+			auto test6 = GetAbsCoord(test2);
+			auto test7 = GetAbsCoord(test3);
+			auto test8 = GetAbsCoord(test4);
+			// Define a map that handles wrapping
+			wrapmap["22"] = { 4, 'T', directions::D, false};
+			wrapmap["23"] = { 3, 'T', directions::D, true };
+			wrapmap["20"] = { 9, 'R', directions::L, true };
+
+			wrapmap["31"] = { 8, 'D', directions::U, true };
+			wrapmap["32"] = { 9, 'D', directions::U, true };
+			wrapmap["33"] = { 2, 'T', directions::D, true };
+			
+			wrapmap["41"] = { 8, 'L', directions::R, true }; // cube 4, down
+			wrapmap["43"] = { 2, 'L', directions::R, false }; // cube 4, up
+			
+			wrapmap["50"] = { 9, 'T', directions::D, true };
+			
+			wrapmap["82"] = { 4, 'D', directions::U, true };
+			wrapmap["81"] = { 3, 'D', directions::U, true };
+
+			wrapmap["93"] = { 5, 'R', directions::L, true };
+			wrapmap["90"] = { 2, 'R', directions::L, true };
+			wrapmap["91"] = { 3, 'L', directions::R, true };
+		}
+		void Init_part1() {
+			// Defines a map that handles wrapping based on 2D topololy of the cube
+			// R=0 D=1 L=2 U=3
+			wrapmap["12"] = { 2, 'R', directions::L, false };
+			wrapmap["13"] = { 6, 'D', directions::U, false };
+
+			wrapmap["23"] = { 2, 'D', directions::U, false };
+			wrapmap["20"] = { 1, 'L', directions::R, false };
+			wrapmap["21"] = { 2, 'T', directions::D, false };
+
+			wrapmap["40"] = { 4, 'L', directions::R, false };
+			wrapmap["42"] = { 4, 'R', directions::L, false };
+
+			wrapmap["52"] = { 6, 'R', directions::L, false };
+			wrapmap["53"] = { 7, 'D', directions::U, false };
+
+			wrapmap["60"] = { 5, 'L', directions::R, false };
+			wrapmap["61"] = { 1, 'T', directions::D, false };
+
+			wrapmap["70"] = { 7, 'L', directions::R, false };
+			wrapmap["71"] = { 5, 'T', directions::D, false };
+			wrapmap["72"] = { 7, 'R', directions::L, false };
+		}
+		void Init_part2() {
+			// Defines a map that handles wrapping
+			// R=0 D=1 L=2 U=3
+			wrapmap["12"] = { 5, 'L', directions::R, true };
+			wrapmap["13"] = { 7, 'L', directions::R, false };
+
+			wrapmap["23"] = { 7, 'D', directions::U, false };
+			wrapmap["20"] = { 6, 'R', directions::L, true };
+			wrapmap["21"] = { 4, 'R', directions::L, false };
+
+			wrapmap["40"] = { 2, 'D', directions::U, false }; 
+			wrapmap["42"] = { 5, 'T', directions::D, false }; 
+
+			wrapmap["52"] = { 1, 'L', directions::R, true };
+			wrapmap["53"] = { 4, 'L', directions::R, false };
+
+			wrapmap["60"] = { 2, 'R', directions::L, true };
+			wrapmap["61"] = { 7, 'R', directions::L, false };
+
+			wrapmap["70"] = { 6, 'D', directions::U, false };
+			wrapmap["71"] = { 2, 'T', directions::D, false };
+			wrapmap["72"] = { 1, 'T', directions::D, false };
+		}
+		void Run() {
+			for (size_t i = 0; i < turns.size(); i++) {
+				Walk(steps[i]);
+				Turn(turns[i]);
+			}
+			Walk(steps.back());
+			std::cout << "final row (y)=" << y_pos + 1 << ", final col (x)=" << x_pos + 1 << ", dir=" << direction << '\n';
+			std::cout << "final password: " << 1000 * (y_pos + 1) + 4 * (x_pos + 1) + direction << "\n\n";
+		}
+	private:
+		std::string filename_;
+		std::vector<std::vector<char>> field;
+		int cube_size = 9999999;
+		size_t max_width = 0;
+		std::vector<int> steps;
+		std::vector<char> turns;
+		size_t x_pos = 0;
+		size_t y_pos = 0;
+		std::vector<size_t> first_xcells;
+		std::vector<size_t> first_ycells;
+		std::vector<size_t> last_ycells;
+		directions direction = directions::R;
+		std::map<int, Cube> cubes;
+		std::map<std::string, Morphinfo> wrapmap;
+	};
+}
+
+
 namespace DayX {
 	class Solution {
 	public:
@@ -1441,6 +1884,6 @@ namespace DayX {
 
 
 int main() {
-	Day19::Solution("day19_input.txt").Solve();
+	Day22::Solution("day22_input.txt").Solve();
 	return 0;
 }
