@@ -9,6 +9,12 @@
 
 namespace aoc 
 {
+	enum directions {
+		R = 0,
+		D,
+		L,
+		U
+	};
 	using ULL = unsigned long long;
 	auto PosHash = [](int pos_0, int pos_1)->ULL { return (ULL(pos_0) << 32 | pos_1); };
 	

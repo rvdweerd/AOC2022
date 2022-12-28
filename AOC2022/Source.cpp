@@ -1539,20 +1539,14 @@ namespace Day22 {
 			// Init pos
 			//y_pos = 5;
 			//x_pos = 11;
-			//direction = directions::R; 
+			//direction = aoc::directions::R; 
 			//y_pos = 11;
 			//x_pos = 10;
-			//direction = directions::D;
+			//direction = aoc::directions::D;
 			//y_pos = 4;
 			//x_pos = 6;
-			//direction = directions::U;
+			//direction = aoc::directions::U;
 		}
-		enum directions {
-			R = 0,
-			D,
-			L,
-			U
-		};
 		struct Cube {
 			int ID;
 			size_t tl_y;
@@ -1570,7 +1564,7 @@ namespace Day22 {
 		struct Morphinfo {
 			int target_cube;
 			char side;
-			directions dir;
+			aoc::directions dir;
 			bool reverse;
 		};
 		void DrawField() {
@@ -1587,12 +1581,12 @@ namespace Day22 {
 				std::cout << std::endl;
 			}
 		}
-		std::pair<Relcoords, directions> ExploreOutOfBounds(Relcoords rc, directions d) {
+		std::pair<Relcoords, aoc::directions> ExploreOutOfBounds(Relcoords rc, aoc::directions d) {
 			size_t rel_x = 0;
 			size_t rel_y = 0;
 			std::string id = std::to_string(rc.cube.ID) + std::to_string(d);
 			size_t offset = 0;
-			if (d == directions::R || d == directions::L) {
+			if (d == aoc::directions::R || d == aoc::directions::L) {
 				offset = rc.y_rel;
 			}
 			else {
@@ -1640,7 +1634,7 @@ namespace Day22 {
 		}
 		bool MoveOutOfBounds() {
 			auto relco = GetRelCoord({ y_pos, x_pos });
-			std::pair<Relcoords, directions> new_state = ExploreOutOfBounds(relco, direction);
+			std::pair<Relcoords, aoc::directions> new_state = ExploreOutOfBounds(relco, direction);
 			Abscoords test = GetAbsCoord(new_state.first);
 			if (field[test.y][test.x] == '.') {
 				y_pos = test.y;
@@ -1652,7 +1646,7 @@ namespace Day22 {
 		}
 		void Walk(int num_steps) {
 			for (size_t i = 0; i < num_steps; i++) {
-				if (direction == directions::R) {
+				if (direction == aoc::directions::R) {
 					if (x_pos < field[y_pos].size() - 1) {
 						if (field[y_pos][x_pos + 1] == '#') {
 							return;
@@ -1668,7 +1662,7 @@ namespace Day22 {
 					}
 				}
 			
-				else if (direction == directions::L) {
+				else if (direction == aoc::directions::L) {
 					if (x_pos == 0 || field[y_pos][x_pos - 1] == ' ') {
 						if (!MoveOutOfBounds()) {
 							return;
@@ -1683,7 +1677,7 @@ namespace Day22 {
 					}
 				}
 			
-				else if (direction == directions::D) {
+				else if (direction == aoc::directions::D) {
 					if (y_pos < last_ycells[x_pos]) {
 						if (field[y_pos + 1][x_pos] == '#') {
 							//draw_field();
@@ -1700,7 +1694,7 @@ namespace Day22 {
 					}
 					
 				}
-				else if (direction == directions::U) {
+				else if (direction == aoc::directions::U) {
 					if (y_pos == 0 || field[y_pos - 1][x_pos] == ' ') {
 						if (!MoveOutOfBounds()) {
 							return;
@@ -1720,14 +1714,14 @@ namespace Day22 {
 		}
 		void Turn(char turndir) {
 			if (turndir == 'R') {
-				direction = directions((direction + 1) % 4);
+				direction = aoc::directions((direction + 1) % 4);
 			}
 			else {
 				if (direction == 0) {
-					direction = directions::U;
+					direction = aoc::directions::U;
 				}
 				else {
-					direction = directions(direction - 1);
+					direction = aoc::directions(direction - 1);
 				}
 			}
 		}
@@ -1771,71 +1765,71 @@ namespace Day22 {
 			auto test7 = GetAbsCoord(test3);
 			auto test8 = GetAbsCoord(test4);
 			// Define a map that handles wrapping
-			wrapmap["22"] = { 4, 'T', directions::D, false};
-			wrapmap["23"] = { 3, 'T', directions::D, true };
-			wrapmap["20"] = { 9, 'R', directions::L, true };
+			wrapmap["22"] = { 4, 'T', aoc::directions::D, false};
+			wrapmap["23"] = { 3, 'T', aoc::directions::D, true };
+			wrapmap["20"] = { 9, 'R', aoc::directions::L, true };
 
-			wrapmap["31"] = { 8, 'D', directions::U, true };
-			wrapmap["32"] = { 9, 'D', directions::U, true };
-			wrapmap["33"] = { 2, 'T', directions::D, true };
+			wrapmap["31"] = { 8, 'D', aoc::directions::U, true };
+			wrapmap["32"] = { 9, 'D', aoc::directions::U, true };
+			wrapmap["33"] = { 2, 'T', aoc::directions::D, true };
 			
-			wrapmap["41"] = { 8, 'L', directions::R, true }; // cube 4, down
-			wrapmap["43"] = { 2, 'L', directions::R, false }; // cube 4, up
+			wrapmap["41"] = { 8, 'L', aoc::directions::R, true }; // cube 4, down
+			wrapmap["43"] = { 2, 'L', aoc::directions::R, false }; // cube 4, up
 			
-			wrapmap["50"] = { 9, 'T', directions::D, true };
+			wrapmap["50"] = { 9, 'T', aoc::directions::D, true };
 			
-			wrapmap["82"] = { 4, 'D', directions::U, true };
-			wrapmap["81"] = { 3, 'D', directions::U, true };
+			wrapmap["82"] = { 4, 'D', aoc::directions::U, true };
+			wrapmap["81"] = { 3, 'D', aoc::directions::U, true };
 
-			wrapmap["93"] = { 5, 'R', directions::L, true };
-			wrapmap["90"] = { 2, 'R', directions::L, true };
-			wrapmap["91"] = { 3, 'L', directions::R, true };
+			wrapmap["93"] = { 5, 'R', aoc::directions::L, true };
+			wrapmap["90"] = { 2, 'R', aoc::directions::L, true };
+			wrapmap["91"] = { 3, 'L', aoc::directions::R, true };
 		}
 		void Init_part1() {
 			// Defines a map that handles wrapping based on 2D topololy of the cube
 			// R=0 D=1 L=2 U=3
-			wrapmap["12"] = { 2, 'R', directions::L, false };
-			wrapmap["13"] = { 6, 'D', directions::U, false };
+			wrapmap["12"] = { 2, 'R', aoc::directions::L, false };
+			wrapmap["13"] = { 6, 'D', aoc::directions::U, false };
 
-			wrapmap["23"] = { 2, 'D', directions::U, false };
-			wrapmap["20"] = { 1, 'L', directions::R, false };
-			wrapmap["21"] = { 2, 'T', directions::D, false };
+			wrapmap["23"] = { 2, 'D', aoc::directions::U, false };
+			wrapmap["20"] = { 1, 'L', aoc::directions::R, false };
+			wrapmap["21"] = { 2, 'T', aoc::directions::D, false };
 
-			wrapmap["40"] = { 4, 'L', directions::R, false };
-			wrapmap["42"] = { 4, 'R', directions::L, false };
+			wrapmap["40"] = { 4, 'L', aoc::directions::R, false };
+			wrapmap["42"] = { 4, 'R', aoc::directions::L, false };
 
-			wrapmap["52"] = { 6, 'R', directions::L, false };
-			wrapmap["53"] = { 7, 'D', directions::U, false };
+			wrapmap["52"] = { 6, 'R', aoc::directions::L, false };
+			wrapmap["53"] = { 7, 'D', aoc::directions::U, false };
 
-			wrapmap["60"] = { 5, 'L', directions::R, false };
-			wrapmap["61"] = { 1, 'T', directions::D, false };
+			wrapmap["60"] = { 5, 'L', aoc::directions::R, false };
+			wrapmap["61"] = { 1, 'T', aoc::directions::D, false };
 
-			wrapmap["70"] = { 7, 'L', directions::R, false };
-			wrapmap["71"] = { 5, 'T', directions::D, false };
-			wrapmap["72"] = { 7, 'R', directions::L, false };
+			wrapmap["70"] = { 7, 'L', aoc::directions::R, false };
+			wrapmap["71"] = { 5, 'T', aoc::directions::D, false };
+			wrapmap["72"] = { 7, 'R', aoc::directions::L, false };
 		}
 		void Init_part2() {
 			// Defines a map that handles wrapping
 			// R=0 D=1 L=2 U=3
-			wrapmap["12"] = { 5, 'L', directions::R, true };
-			wrapmap["13"] = { 7, 'L', directions::R, false };
+			wrapmap["12"] = { 5, 'L', aoc::directions::R, true };
+			wrapmap["13"] = { 7, 'L', aoc::directions::R, false };
 
-			wrapmap["23"] = { 7, 'D', directions::U, false };
-			wrapmap["20"] = { 6, 'R', directions::L, true };
-			wrapmap["21"] = { 4, 'R', directions::L, false };
+			wrapmap["23"] = { 7, 'D', aoc::directions::U, false };
+			wrapmap["20"] = { 6, 'R', aoc::directions::L, true };
+			wrapmap["21"] = { 4, 'R', aoc::directions::L, false };
 
-			wrapmap["40"] = { 2, 'D', directions::U, false }; 
-			wrapmap["42"] = { 5, 'T', directions::D, false }; 
+			wrapmap["40"] = { 2, 'D', aoc::directions::U, false }; 
+			wrapmap["42"] = { 5, 'T', aoc::directions::D, false }; 
 
-			wrapmap["52"] = { 1, 'L', directions::R, true };
-			wrapmap["53"] = { 4, 'L', directions::R, false };
+			wrapmap["52"] = { 1, 'L', aoc::directions::R, true };
+			wrapmap["53"] = { 4, 'L', aoc::directions::R, false };
 
-			wrapmap["60"] = { 2, 'R', directions::L, true };
-			wrapmap["61"] = { 7, 'R', directions::L, false };
+			wrapmap["60"] = { 2, 'R', aoc::directions::L, true };
+			wrapmap["61"] = { 7, 'R', aoc::directions::L, false };
 
-			wrapmap["70"] = { 6, 'D', directions::U, false };
-			wrapmap["71"] = { 2, 'T', directions::D, false };
-			wrapmap["72"] = { 1, 'T', directions::D, false };
+			wrapmap["70"] = { 6, 'D', aoc::directions::U, false };
+			wrapmap["71"] = { 2, 'T', aoc::directions::D, false };
+			wrapmap["72"] = { 1, 'T', aoc::directions::D, false };
 		}
 		void Run() {
 			for (size_t i = 0; i < turns.size(); i++) {
@@ -1858,9 +1852,313 @@ namespace Day22 {
 		std::vector<size_t> first_xcells;
 		std::vector<size_t> first_ycells;
 		std::vector<size_t> last_ycells;
-		directions direction = directions::R;
+		aoc::directions direction = aoc::directions::R;
 		std::map<int, Cube> cubes;
 		std::map<std::string, Morphinfo> wrapmap;
+	};
+}
+
+namespace Day24 {
+	class Solution {
+	public:
+		Solution(std::string filename)
+			:
+			filename_(filename)
+		{
+		}
+		struct Pos {
+			Pos()
+			{}
+			Pos(int y, int x)
+				:
+				y(y),
+				x(x)
+			{}
+			bool operator==(const Pos& rhs) const
+			{
+				return x == rhs.x && y == rhs.y;
+			}
+			bool operator!=(const Pos& rhs) const
+			{
+				return !(*this == rhs);
+			}
+			int y;
+			int x;
+		};
+		struct State {
+			Pos pos;
+			aoc::directions dir;
+		};
+		struct FullState {
+			FullState()
+			{}
+			FullState(
+				Pos pos, 
+				int t, 
+				std::vector<std::vector<int>> fieldvals, 
+				std::vector<State> storms, 
+				std::vector<std::vector<int>> visited, 
+				std::string path
+				)
+				:
+				pos(pos),
+				t(t),
+				fieldvals(fieldvals),
+				storms(storms),
+				visited(visited),
+				path(path)
+			{}
+			Pos pos;
+			int t;
+			std::vector<std::vector<int>> fieldvals;
+			std::vector<State> storms;
+			std::vector<std::vector<int>> visited;
+			std::string path;
+		};
+		FullState LoadData() {
+			std::ifstream in(filename_);
+			std::string str;
+			size_t linecount = 0;
+			Pos curpos;
+			std::vector<std::vector<int>> fieldvals;
+			std::vector<State> storms;
+			std::vector<std::vector<int>> visited;
+			while (std::getline(in, str)) {
+				if (str[2] == '#') {
+					width = (int)str.size();
+					height = (int)linecount + 1;
+					curpos = { 0,1 };
+					endpos = { (int)linecount, width - 2 };
+				}
+			std::vector<int> linevals;
+				for (size_t i = 0; i < width; i++) {
+					if (str[i] == '.') {
+						linevals.push_back(0);
+					}
+					else if (str[i] == '#') {
+						linevals.push_back(1);
+					}
+					else {
+						linevals.push_back(1);
+						switch (str[i]) {
+						case '<':
+							storms.push_back({ Pos(linecount,i), aoc::directions::L});
+							break;
+						case '>':
+							storms.push_back({ Pos(linecount,i), aoc::directions::R });
+							break;
+						case 'v':
+							storms.push_back({ Pos(linecount,i), aoc::directions::D });
+							break;
+						case '^':
+							storms.push_back({ Pos(linecount,i), aoc::directions::U });
+							break;
+						assert(false);
+						}
+					}
+				}
+				fieldvals.push_back(linevals);
+				linecount++;
+			}
+			visited = std::vector<std::vector<int>>(height, std::vector<int>(width, 0));
+			visited[0][1] = 1;
+			std::set<long long int> visits_in_full_cycle;
+			if (width == height) {
+				repeat_interval = width - 2;
+			}
+			else {
+				repeat_interval = (width - 2) * (height - 2);
+			}
+			visits_in_full_cycle.insert(Hash_Time_and_Pos(0, curpos));
+			return FullState(curpos, 0, fieldvals, storms, visited, "");
+		}
+		void DrawField(FullState fs) {
+			system("CLS");
+			std::cout << "end of minute " << fs.t << ", path taken " << fs.path << '\n';
+			for (size_t row = 0; row < height; row++) {
+				for (size_t col = 0; col < width; col++) {
+					if (Pos(row, col) == fs.pos) {
+						std::cout << 'E';
+					}
+					else {
+						std::cout << fs.fieldvals[row][col];
+					}
+				}
+				std::cout << std::endl;
+			}
+		}
+		void MoveField(FullState& fs) {
+			for (State& storm : fs.storms) {
+				fs.fieldvals[storm.pos.y][storm.pos.x] -= 1;
+				switch (storm.dir) {
+				case aoc::directions::D:
+					fs.visited[storm.pos.y][storm.pos.x] = 0;
+					storm.pos.y = std::max(1, (storm.pos.y + 1) % (height - 1));
+					break;
+				case aoc::directions::L:
+					fs.visited[storm.pos.y][storm.pos.x] = 0;
+					storm.pos.x = (storm.pos.x - 1) % (width - 1);
+					if (storm.pos.x < 1) {
+						storm.pos.x = width- 2;
+					}
+					break;
+				case aoc::directions::R:
+					fs.visited[storm.pos.y][storm.pos.x] = 0;
+					storm.pos.x = std::max(1, (storm.pos.x + 1) % (width - 1));
+					break;
+				case aoc::directions::U:
+					fs.visited[storm.pos.y][storm.pos.x] = 0;
+					storm.pos.y = (storm.pos.y - 1 ) % (height - 1);
+					if (storm.pos.y < 1) {
+						storm.pos.y = height - 2;
+					}
+					break;
+				assert(false);
+				}
+				fs.fieldvals[storm.pos.y][storm.pos.x] += 1;
+			}
+		}
+		std::vector<FullState> GetMoveOptions(FullState& fs) {
+			std::vector<FullState> new_states;
+			int new_t = fs.t + 1;
+			if (fs.fieldvals[fs.pos.y][fs.pos.x - 1] == 0 && fs.visited[fs.pos.y][fs.pos.x - 1] == 0) { // check left
+				Pos new_pos = { fs.pos.y, fs.pos.x - 1 };
+				long long int tpos_hash = Hash_Time_and_Pos(new_t, new_pos);
+				if (visits_in_full_cycle.find(tpos_hash) == visits_in_full_cycle.end()) {
+					visits_in_full_cycle.insert(tpos_hash);
+					fs.visited[new_pos.y][new_pos.x] = 1;
+					FullState ns = FullState(new_pos, new_t, fs.fieldvals, fs.storms, fs.visited, fs.path + 'L');
+					new_states.push_back(ns);
+					fs.visited[new_pos.y][new_pos.x] = 0;
+				}
+			}
+			if (fs.fieldvals[fs.pos.y][fs.pos.x + 1] == 0 && fs.visited[fs.pos.y][fs.pos.x + 1] == 0) { // check right
+				Pos new_pos = Pos(fs.pos.y, fs.pos.x + 1);
+				long long int tpos_hash = Hash_Time_and_Pos(new_t, new_pos);
+				if (visits_in_full_cycle.find(tpos_hash) == visits_in_full_cycle.end()) {
+					visits_in_full_cycle.insert(tpos_hash);
+					fs.visited[new_pos.y][new_pos.x] = 1;
+					FullState ns = FullState(new_pos, new_t, fs.fieldvals, fs.storms, fs.visited, fs.path + 'R');
+					new_states.push_back(ns);
+					fs.visited[new_pos.y][new_pos.x] = 0;
+					}
+			}
+			if (fs.pos.y > 0 && fs.fieldvals[fs.pos.y - 1][fs.pos.x] == 0 && fs.visited[fs.pos.y - 1][fs.pos.x] == 0) { // check up
+				Pos new_pos = Pos(fs.pos.y - 1, fs.pos.x);
+				long long int tpos_hash = Hash_Time_and_Pos(new_t, new_pos);
+				if (visits_in_full_cycle.find(tpos_hash) == visits_in_full_cycle.end()) {
+					visits_in_full_cycle.insert(tpos_hash);
+					fs.visited[new_pos.y][new_pos.x] = 1;
+					FullState ns = FullState(new_pos, new_t, fs.fieldvals, fs.storms, fs.visited, fs.path + 'U');
+					new_states.push_back(ns);
+					fs.visited[new_pos.y][new_pos.x] = 0;
+				}
+			}
+			if (fs.pos.y < (height - 1) && fs.fieldvals[fs.pos.y + 1][fs.pos.x] == 0 && fs.visited[fs.pos.y + 1][fs.pos.x] == 0) { // check down
+				Pos new_pos = Pos(fs.pos.y + 1, fs.pos.x);
+				long long int tpos_hash = Hash_Time_and_Pos(new_t, new_pos);
+				if (visits_in_full_cycle.find(tpos_hash) == visits_in_full_cycle.end()) {
+					visits_in_full_cycle.insert(tpos_hash);
+					fs.visited[new_pos.y][new_pos.x] = 1;
+					FullState ns = FullState(new_pos, new_t, fs.fieldvals, fs.storms, fs.visited, fs.path + 'D');
+					new_states.push_back(ns);
+					fs.visited[new_pos.y][new_pos.x] = 0;
+				}
+			}
+			if (fs.fieldvals[fs.pos.y][fs.pos.x] == 0) { // stay put
+				Pos new_pos = fs.pos;
+				long long int tpos_hash = Hash_Time_and_Pos(new_t, new_pos);
+				if (visits_in_full_cycle.find(tpos_hash) == visits_in_full_cycle.end()) {
+					visits_in_full_cycle.insert(tpos_hash);
+					FullState ns = FullState(new_pos, new_t, fs.fieldvals, fs.storms, fs.visited, fs.path + '.');
+					new_states.push_back(ns); 
+				}
+			}
+			return new_states;
+		}
+		void Solve() {
+			FullState fs = LoadData();
+			std::queue<FullState> queue;
+			
+			queue.push(fs);
+			while (!queue.empty()) {
+				fs = queue.front();
+				queue.pop();
+				MoveField(fs);
+				for (auto new_state : GetMoveOptions(fs)) {
+					if (new_state.pos == endpos) {
+						std::cout << "End position reached after minute " << new_state.t << ", path taken: " << new_state.path << '\n';
+						fs = new_state;
+						while (!queue.empty()) {
+							queue.pop();
+						}
+						break;
+					}
+					queue.push(new_state);
+				}
+			}
+
+			fs.visited.clear();
+			fs.visited = std::vector<std::vector<int>>(height, std::vector<int>(width, 0));
+			fs.visited[height - 1][width - 2] = 1;
+			visits_in_full_cycle.clear();
+			visits_in_full_cycle.insert(Hash_Time_and_Pos(fs.t, fs.pos));
+			queue.push(fs);
+			while (!queue.empty()) {
+				fs = queue.front();
+				queue.pop();
+				MoveField(fs);
+				for (auto new_state : GetMoveOptions(fs)) {
+					if (new_state.pos == startpos) {
+						std::cout << "Start position reached after minute " << new_state.t << ", path taken: " << new_state.path << '\n';
+						fs = new_state;
+						while (!queue.empty()) {
+							queue.pop();
+						}
+						break;
+					}
+					queue.push(new_state);
+				}
+			}
+			
+			fs.visited.clear();
+			fs.visited = std::vector<std::vector<int>>(height, std::vector<int>(width, 0));
+			fs.visited[0][1] = 0;
+			visits_in_full_cycle.clear();
+			visits_in_full_cycle.insert(Hash_Time_and_Pos(fs.t, fs.pos));
+			queue.push(fs);
+			while (!queue.empty()) {
+				fs = queue.front();
+				queue.pop();
+				MoveField(fs);
+				for (auto new_state : GetMoveOptions(fs)) {
+					if (new_state.pos == endpos) {
+						std::cout << "End position reached after minute " << new_state.t << ", path taken: " << new_state.path << '\n';
+						fs = new_state;
+						while (!queue.empty()) {
+							queue.pop();
+						}
+						break;
+					}
+					queue.push(new_state);
+				}
+			}			
+			std::cin.get();
+		}
+		long long int Hash_Time_and_Pos(int t, Pos pos) {
+			long long int t_ = (long long int)(t % repeat_interval);
+			long long int posidx = (long long int)(pos.y * width + pos.x);
+			long long int vis = (t_ << 32) | posidx;
+			return vis;
+		}
+	private:
+		std::string filename_;
+		std::set<long long int> visits_in_full_cycle;
+		Pos startpos = Pos(0,1);
+		Pos endpos;
+		int width;
+		int height;
+		int repeat_interval;
 	};
 }
 
@@ -1884,6 +2182,6 @@ namespace DayX {
 
 
 int main() {
-	Day22::Solution("day22_input.txt").Solve();
+	Day24::Solution("day24_input.txt").Solve();
 	return 0;
 }
