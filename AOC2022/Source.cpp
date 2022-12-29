@@ -2162,6 +2162,122 @@ namespace Day24 {
 	};
 }
 
+namespace Day25 {
+	class Solution {
+	public:
+		Solution(std::string filename)
+			:
+			filename_(filename)
+		{
+		}
+		void LoadData() {
+			std::ifstream in(filename_);
+			std::string str;
+			size_t linecount = 0;
+			while (std::getline(in, str)) {
+				input.push_back(str);
+			}
+			char2int['='] = -2;
+			char2int['-'] = -1;
+			char2int['0'] = 0;
+			char2int['1'] = 1;
+			char2int['2'] = 2;
+			int2char[-2] = '=';
+			int2char[-1] = '-';
+			int2char[0] = '0';
+			int2char[1] = '1';
+			int2char[2] = '2';
+			maxcovermap[0] = 2;
+			auto test = GetExpVal(16);
+
+			for (size_t exp = 1; exp < 20; exp++) {
+				maxcovermap[exp] = 2*GetExpVal(exp) + maxcovermap[exp - 1];
+			}
+		}
+		aoc::ULL GetExpVal(size_t exp) {
+			aoc::ULL expval_;
+			auto pt1 = expmap.find(exp);
+			if (pt1 == expmap.end()) {
+				expval_ = aoc::powi(5, exp);
+				expmap[exp] = expval_;
+				prodmap[expval].insert({0,0});
+			}
+			else {
+				expval_ = pt1->second;
+			}
+			return expval_;
+		}
+		aoc::LLI Quin2Dec(std::string qnum) {
+			aoc::LLI result = 0;
+			for (size_t exp = 0; exp< qnum.size() ; exp++) {
+				char mult_char = qnum[qnum.size() - 1 - exp];
+				int mult = char2int[mult_char];
+				expval = GetExpVal(exp);
+				auto pt2 = prodmap[expval].find(mult);
+				if (pt2 == prodmap[expval].end()) {
+					toadd = expval * mult;
+					prodmap[expval].insert({ mult, toadd });
+				}
+				else {
+					toadd = prodmap[expval][mult];
+				}
+				result += toadd;
+			}
+			return result;
+		}
+		std::string Dec2Quin(long long int decval) {
+			std::string retval;
+			size_t maxexp = std::ceil(std::log(double(std::abs(decval))) / std::log(double(5)));
+			
+			for (size_t exp = maxexp; exp >= 0; --exp) {
+				expval = GetExpVal(exp);
+				for (int mult : std::vector<int>{ -2,-1,0,1,2 }) {
+					aoc::LLI to_be_bridged = decval - expval * mult;
+					aoc::LLI max_cover;
+					if (exp == 0) { //end state reached
+						retval += int2char[decval];
+						while (retval[0] == '0') {
+							retval.erase(0,1);
+						}
+						return retval;
+					}
+					else {
+						max_cover = maxcovermap[exp - 1];
+					}
+					bool can_cover = std::abs(to_be_bridged) <= max_cover;
+					if (can_cover) {
+						retval += int2char[mult];
+						decval = to_be_bridged;
+						break;
+					}
+				}
+			}
+			return retval;
+		}
+		void Solve() {
+			LoadData();
+			aoc::LLI runsum = 0;
+			for (std::string qnum : input) {
+				runsum += Quin2Dec(qnum);
+			}
+			std::cout << "sum=" << runsum <<"\n";
+			std::string qnum = Dec2Quin(runsum);
+			std::cout << qnum << "\n";
+			std::cin.get();
+		}
+	private:
+		std::string filename_;
+		std::vector<std::string> input;
+		std::map<char, int> char2int;
+		std::map<int, char> int2char;
+		std::map<size_t, aoc::ULL> expmap;
+		std::map<aoc::ULL, std::map<aoc::LLI, aoc::LLI>> prodmap;
+		std::map<size_t, aoc::ULL> maxcovermap;
+		aoc::ULL expval;
+		aoc::LLI toadd;
+	};
+}
+
 
 namespace DayX {
 	class Solution {
@@ -2182,6 +2298,6 @@ namespace DayX {
 
 
 int main() {
-	Day24::Solution("day24_input.txt").Solve();
+	Day25::Solution("day25_input.txt").Solve();
 	return 0;
 }

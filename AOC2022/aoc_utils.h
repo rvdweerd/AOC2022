@@ -9,12 +9,24 @@
 
 namespace aoc 
 {
+	long long int powi(unsigned long long int base, unsigned long long int exp)
+	{
+		unsigned long long int res = 1;
+		while (exp) {
+			if (exp & 1)
+				res *= base;
+			exp >>= 1;
+			base *= base;
+		}
+		return res;
+	}
 	enum directions {
 		R = 0,
 		D,
 		L,
 		U
 	};
+	using LLI = long long int;
 	using ULL = unsigned long long;
 	auto PosHash = [](int pos_0, int pos_1)->ULL { return (ULL(pos_0) << 32 | pos_1); };
 	

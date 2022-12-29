@@ -71,5 +71,6 @@
       <Filter>Resource Files</Filter>
     </Text>
     <Text Include="day24_input.txt" />
+    <Text Include="day25_input.txt" />
   </ItemGroup>
 </Project>
