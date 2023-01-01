@@ -2278,6 +2278,226 @@ namespace Day25 {
 	};
 }
 
+namespace Day23 {
+	aoc::LLI Pos2Hash(int y, int x) {
+		return (aoc::LLI(y) << 32 | aoc::LLI(x)); // Beware: fails for negative coords, used workaround but need to fix this
+	}
+	struct Pos {
+		Pos() {}
+		Pos(int y, int x)
+			:
+			y(y),
+			x(x)
+		{
+			hash = Pos2Hash(y, x);
+		}
+		int y;
+		int x;
+		aoc::LLI hash;
+	};
+	Pos Hash2Pos(aoc::ULL hash) {
+		aoc::ULL hash2 = hash;
+		int y = int(hash2 >> 32);
+		int x = int(hash << 32 >> 32);
+		return Pos(y,x);
+	}
+	class Solution {
+	public:
+		Solution(std::string filename)
+			:
+			filename_(filename)
+		{
+		}
+		struct LocationInfo {
+			LocationInfo() {};
+			LocationInfo(int y, int x, bool occupied) 
+				:
+				y(y),
+				x(x),
+				occupied(occupied),
+				poshash(Pos2Hash(y,x))
+			{
+				neighbors['N'] = {};
+				neighbors['E'] = {};
+				neighbors['S'] = {};
+				neighbors['W'] = {};
+				neighbors['N'].push_back(Pos2Hash(y - 1, x - 1));
+				neighbors['N'].push_back(Pos2Hash(y - 1, x    ));
+				neighbors['N'].push_back(Pos2Hash(y - 1, x + 1));
+				neighbors['E'].push_back(Pos2Hash(y - 1, x + 1));
+				neighbors['E'].push_back(Pos2Hash(y    , x + 1));
+				neighbors['E'].push_back(Pos2Hash(y + 1, x + 1));
+				neighbors['S'].push_back(Pos2Hash(y + 1, x - 1));
+				neighbors['S'].push_back(Pos2Hash(y + 1, x    ));
+				neighbors['S'].push_back(Pos2Hash(y + 1, x + 1));
+				neighbors['W'].push_back(Pos2Hash(y - 1, x - 1));
+				neighbors['W'].push_back(Pos2Hash(y    , x - 1));
+				neighbors['W'].push_back(Pos2Hash(y + 1, x - 1));
+			}
+			int y = 0;
+			int x = 0;
+			bool occupied = false;
+			aoc::LLI poshash = 0;
+			std::map<char,std::vector<aoc::LLI>> neighbors;
+		};
+		void UpdateBoundaries() {
+			for (const Pos& elve : elve_positions) {
+				minx = std::min(minx, elve.x);
+				maxx = std::max(maxx, elve.x);
+				miny = std::min(miny, elve.y);
+				maxy = std::max(maxy, elve.y);
+			}
+		}
+		void AddCellToFieldMap(int y, int x, bool has_elve) {
+			if (has_elve) {
+				fieldmap.insert(std::pair<aoc::LLI, LocationInfo>(Pos2Hash(y, x), { y, x, true }));
+			}
+			else {
+				fieldmap.insert(std::pair<aoc::LLI, LocationInfo>(Pos2Hash(y, x), { y, x, false }));
+			}
+			UpdateBoundaries();
+		}
+		void LoadData() {
+			std::ifstream in(filename_);
+			std::string str;
+			int offset = 100000; // workaround to deal with hasing issue (avoid negative coords)
+			int y = 0;
+			while (std::getline(in, str)) {
+				std::vector<char> line;
+				for (size_t x = 0; x < str.size();x++) {
+					line.push_back(str[x]);
+					if (str[x] == '#') {
+						elve_positions.push_back(Pos(y + offset, x + offset));
+						AddCellToFieldMap(y+offset, x + offset, true);
+					}
+					else {
+						AddCellToFieldMap(y + offset, x + offset, false);
+					}
+				}
+				field.push_back(line);
+				y++;
+			}
+		}
+		bool HasNeighborsInDirection(Pos elvepos, char lookdir) {
+			bool has_neighbors = false;
+			for (aoc::LLI n : fieldmap[elvepos.hash].neighbors[lookdir]) {
+				if (fieldmap.find(n) != fieldmap.end() && fieldmap[n].occupied) {
+					has_neighbors = true;
+					return has_neighbors;
+				}
+			}
+			return has_neighbors;
+		}
+		bool IsNeighborFree(Pos elve) {
+			bool free = true;
+			for (char dir : std::vector<char>{ 'N','S','W','E' }) {
+				for ( aoc::LLI n : fieldmap[elve.hash].neighbors[dir]) {
+					if (fieldmap.find(n) != fieldmap.end() && fieldmap[n].occupied) {
+						free = false;
+						return free;
+					}
+				}
+			}
+			return free;
+		}
+		bool PlanAndExecuteMoves() {
+			int static_count = 0;
+			std::map<aoc::LLI, aoc::LLI> move_proposals;
+			std::map<aoc::LLI, int> occupancy_count;
+			std::set<aoc::LLI> eligible_elves;
+			for (auto elvepos : elve_positions) {
+				if (elvepos.hash == Pos2Hash(5, 0)) {
+					int k = 0;
+				}
+				if (IsNeighborFree(elvepos)) { 
+					static_count++;
+				}
+				else { // plan a move if you have neighbors
+					eligible_elves.insert(elvepos.hash);
+					for (size_t i = 0; i < 4; i++) {
+						char lookdir = lookdirorder[(movecount + i )% 4];
+						if (!HasNeighborsInDirection(elvepos, lookdir)) {
+							aoc::LLI targetposhash = fieldmap[elvepos.hash].neighbors[lookdir][1];
+							move_proposals[elvepos.hash] = targetposhash;
+							if (occupancy_count.find(targetposhash) == occupancy_count.end()) {
+								occupancy_count[targetposhash] = 1;
+							}
+							else {
+								occupancy_count[targetposhash] += 1;
+							}
+							break;
+						}
+					}
+				}
+			}
+			for (Pos& elvepos : elve_positions) {
+				if (eligible_elves.find(elvepos.hash) != eligible_elves.end()) {
+					aoc::LLI target = move_proposals[elvepos.hash];
+					if (occupancy_count[target] == 1) {
+						Pos targetpos = Hash2Pos(target);
+						fieldmap[elvepos.hash].occupied = false;
+						elvepos.y = targetpos.y;
+						elvepos.x = targetpos.x;
+						elvepos.hash = targetpos.hash;
+						if (fieldmap.find(target) == fieldmap.end()) {
+							AddCellToFieldMap(targetpos.y, targetpos.x, true);
+						};
+						fieldmap[target].occupied = true;
+					}
+				}
+			}
+			movecount++;
+			return static_count < (int)elve_positions.size();
+		}
+		int DrawField() {
+			int count = 0;
+			UpdateBoundaries();
+			for (int y = miny; y <= maxy; y++) {
+				for (int x = minx; x <= maxx; x++) {
+					auto it = fieldmap.find(Pos2Hash(y, x));
+					if (it != fieldmap.end() && it->second.occupied) {
+						std::cout << "#";
+					}
+					else {
+						std::cout << ".";
+						count++;
+					}
+				}
+				std::cout << '\n';
+			}
+			std::cout << '\n';
+			return count;
+		}
+		void Solve() {
+			LoadData();
+			DrawField();
+			std::cout << "Initial positions on the field\n" << divider;
+			while (PlanAndExecuteMoves()) {
+				if (movecount == 10) {
+					num_open_positions = DrawField();
+					std::cout << "PART 1: After " << movecount << " moves, the numer of empty positions is: " << num_open_positions << "\n" << divider;
+				}
+			}
+			num_open_positions = DrawField();
+			std::cout << "PART 2: All elves have found their steady state position at movecount: " << movecount << " (with " << num_open_positions << " empty positions)" << '\n' << divider;
+			std::cin.get();
+		}
+	private:
+		std::string filename_;
+		std::vector<std::vector<char>> field;
+		std::vector<Pos> elve_positions;
+		std::map<aoc::LLI, LocationInfo> fieldmap;
+		int minx= 1000000000;
+		int maxx=-1000000000;
+		int miny= 1000000000;
+		int maxy=-1000000000;
+		std::vector<char> lookdirorder = { 'N','S','W','E' };
+		size_t movecount = 0;
+		int num_open_positions = 0;
+		std::string divider = "==============================================================================\n\n\n";
+	};
+}
+
 
 namespace DayX {
 	class Solution {
@@ -2298,6 +2518,6 @@ namespace DayX {
 
 
 int main() {
-	Day25::Solution("day25_input.txt").Solve();
+	Day23::Solution("day23_input.txt").Solve();
 	return 0;
 }

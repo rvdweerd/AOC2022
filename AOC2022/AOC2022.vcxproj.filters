@@ -72,5 +72,6 @@
     </Text>
     <Text Include="day24_input.txt" />
     <Text Include="day25_input.txt" />
+    <Text Include="day23_input.txt" />
   </ItemGroup>
 </Project>
