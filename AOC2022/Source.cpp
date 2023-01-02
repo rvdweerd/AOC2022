@@ -2498,6 +2498,118 @@ namespace Day23 {
 	};
 }
 
+namespace Day20 {
+	class Solution {
+	public:
+		Solution(std::string filename)
+			:
+			filename_(filename)
+		{
+		}
+		void LoadData() {
+			std::ifstream in(filename_);
+			std::string str;
+			int i = 0;
+			while (std::getline(in, str)) {
+				vals.push_back(stoi(str));
+				idx_of_vals.push_back(i);
+				find_idx_position[i] = i;
+				i++;
+			}
+		}
+		void AdjustIndices(int iterator, int curidx, int newidx) {
+			int deltaidx = newidx - curidx;
+			if (deltaidx == 0) {
+				return;
+			}
+			find_idx_position.clear();
+			for (size_t j = 0; j < idx_of_vals.size(); j++) {
+				find_idx_position[idx_of_vals[j]] = j;
+				//assert(find_idx_position_test[idx_of_vals[j]] == find_idx_position[idx_of_vals[j]]);
+			}
+
+			if (deltaidx > 0) {
+				for (int idx = curidx + 1; idx <= curidx + deltaidx; idx++) {
+					idx_of_vals[find_idx_position[idx]] -= 1;
+					//find_idx_position[idx_of_vals[find_idx_position[idx]]] = idx;
+				}
+				idx_of_vals[iterator] += deltaidx;
+				//find_idx_position[idx_of_vals[iterator]] = iterator;
+			}
+			else if (deltaidx < 0) {
+				for (int idx = curidx + deltaidx; idx < curidx; idx++) {
+					idx_of_vals[find_idx_position[idx]] += 1;
+					//find_idx_position[idx_of_vals[find_idx_position[idx]]] = idx;
+				}
+				idx_of_vals[iterator] += deltaidx;
+			}
+		}
+		std::pair<std::vector<int>,int> GetUpdatedCode(bool print) {
+			std::vector<int> codevec;
+			int zeroidx = -1;
+			find_idx_position.clear();
+			for (size_t j = 0; j < idx_of_vals.size(); j++) {
+				find_idx_position[idx_of_vals[j]] = j;
+			}
+			for (size_t j = 0; j < idx_of_vals.size(); j++) {
+				int curval = vals[(size_t)find_idx_position[j]];
+				codevec.push_back(curval);
+				if (print) {
+					std::cout << std::to_string(curval) << ", ";
+				}
+				if (curval == 0) {
+					zeroidx = j;
+				}
+			}
+			std::cout<< std::endl;
+			return { codevec, zeroidx };
+		}
+		void Solve() {
+			LoadData();
+			GetUpdatedCode(true);
+			//int mod = (int)vals.size();
+			int mod = (int)vals.size();
+			for (size_t i = 0; i < vals.size(); i++) {
+				int curidx = idx_of_vals[i];
+				int curval = vals[i];
+				int newidx = -1;
+				if (curval == 0) {
+					continue;
+				}
+				//if (curidx + curval <= 0) {
+				if (curidx + curval <= 0) {
+					newidx = (curidx + curval -1  + mod) % mod;
+				}
+				else if (curidx + curval >= (mod-1)) { /// -1
+					newidx = (curidx + curval +1) % mod;					
+				}
+				else {
+					newidx = curidx + curval;
+				}
+				AdjustIndices(i, curidx, newidx);
+				//GetUpdatedCode(true);
+			}
+
+			//std::vector<int>::iterator it = std::find(vals.begin(), vals.end(), -3);
+			//int zerovalidx = std::distance(vals.begin(), it);
+
+			auto codeinfo = GetUpdatedCode(true);
+			int zeroidx = codeinfo.second;
+			int val1 = codeinfo.first[(zeroidx + 1000) % mod];
+			int val2 = codeinfo.first[(zeroidx + 2000) % mod];
+			int val3 = codeinfo.first[(zeroidx + 3000) % mod];
+			int result = val1 + val2 + val3;
+			std::cout << "Result: " << result;
+			std::cin.get();
+		}
+	private:
+		std::string filename_;
+		std::vector<int> vals;
+		std::vector<int> idx_of_vals;
+		std::map<int,int> find_idx_position;
+	};
+}
+
 
 namespace DayX {
 	class Solution {
@@ -2518,6 +2630,6 @@ namespace DayX {
 
 
 int main() {
-	Day23::Solution("day23_input.txt").Solve();
+	Day20::Solution("day20_input.txt").Solve();
 	return 0;
 }

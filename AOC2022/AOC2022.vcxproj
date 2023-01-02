@@ -140,6 +140,7 @@
     <Text Include="day16_input.txt" />
     <Text Include="day19_input.txt" />
     <Text Include="day1_input.txt" />
+    <Text Include="day20_input.txt" />
     <Text Include="day22_input.txt" />
     <Text Include="day23_input.txt" />
     <Text Include="day24_input.txt" />
