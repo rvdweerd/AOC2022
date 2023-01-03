@@ -2517,8 +2517,8 @@ namespace Day20 {
 				i++;
 			}
 		}
-		void AdjustIndices(int iterator, int curidx, int newidx) {
-			int deltaidx = newidx - curidx;
+		void AdjustIndices(aoc::LLI iterator, aoc::LLI curidx, aoc::LLI newidx) {
+			aoc::LLI deltaidx = newidx - curidx;
 			if (deltaidx == 0) {
 				return;
 			}
@@ -2529,27 +2529,27 @@ namespace Day20 {
 			}
 
 			if (deltaidx > 0) {
-				for (int idx = curidx + 1; idx <= curidx + deltaidx; idx++) {
+				for (aoc::LLI idx = curidx + 1; idx <= curidx + deltaidx; idx++) {
 					idx_of_vals[find_idx_position[idx]] -= 1;
 				}
 				idx_of_vals[iterator] += deltaidx;
 			}
 			else if (deltaidx < 0) {
-				for (int idx = curidx + deltaidx; idx < curidx; idx++) {
+				for (aoc::LLI idx = curidx + deltaidx; idx < curidx; idx++) {
 					idx_of_vals[find_idx_position[idx]] += 1;
 				}
 				idx_of_vals[iterator] += deltaidx;
 			}
 		}
-		std::pair<std::vector<int>,int> GetUpdatedCode(bool print) {
-			std::vector<int> codevec;
-			int zeroidx = -1;
+		std::pair<std::vector<aoc::LLI>, aoc::LLI> GetUpdatedCode(bool print) {
+			std::vector<aoc::LLI> codevec;
+			aoc::LLI zeroidx = -1;
 			find_idx_position.clear();
 			for (size_t j = 0; j < idx_of_vals.size(); j++) {
 				find_idx_position[idx_of_vals[j]] = j;
 			}
 			for (size_t j = 0; j < idx_of_vals.size(); j++) {
-				int curval = vals[(size_t)find_idx_position[j]];
+				aoc::LLI curval = vals[(size_t)find_idx_position[j]];
 				codevec.push_back(curval);
 				if (print) {
 					std::cout << std::to_string(curval) << ", ";
@@ -2561,24 +2561,27 @@ namespace Day20 {
 			std::cout<< std::endl;
 			return { codevec, zeroidx };
 		}
-		int modulo(int x, int mod) { // make this work for negative x as well
+		aoc::LLI modulo(aoc::LLI x, aoc::LLI mod) { // make this work for negative x as well
 			if (x >= 0) {
 				return x % mod;
 			}
 			else {
-				int corr = std::abs(x) / mod + 1;
+				aoc::LLI corr = std::abs(x) / mod + 1;
 				return (x + corr*mod) % mod;
 			}
 		}
 		void Solve() {
+			Solve2();
+		}
+		void Solve1() {
 			LoadData();
 			GetUpdatedCode(true);
-			int mod = (int)vals.size() - 1;
-			int newidx = -1;
+			aoc::LLI mod = (aoc::LLI)vals.size() - 1;
+			aoc::LLI newidx = -1;
 
 			for (size_t i = 0; i < vals.size(); i++) {
-				int curidx = idx_of_vals[i];
-				int curval = vals[i];
+				aoc::LLI curidx = idx_of_vals[i];
+				aoc::LLI curval = vals[i];
 				if (modulo((curidx + curval), mod) == 0) {
 					newidx = mod;
 				}
@@ -2590,19 +2593,205 @@ namespace Day20 {
 			}
 			
 			auto codeinfo = GetUpdatedCode(true);
-			int zeroidx = codeinfo.second;
-			int val1 = codeinfo.first[(zeroidx + 1000) % vals.size()];
-			int val2 = codeinfo.first[(zeroidx + 2000) % vals.size()];
-			int val3 = codeinfo.first[(zeroidx + 3000) % vals.size()];
-			int result = val1 + val2 + val3;
+			aoc::LLI zeroidx = codeinfo.second;
+			aoc::LLI val1 = codeinfo.first[(zeroidx + 1000) % vals.size()];
+			aoc::LLI val2 = codeinfo.first[(zeroidx + 2000) % vals.size()];
+			aoc::LLI val3 = codeinfo.first[(zeroidx + 3000) % vals.size()];
+			aoc::LLI result = val1 + val2 + val3;
 			std::cout << "Result: " << result;
+			std::cin.get();
+		}
+		void Solve2() {
+			LoadData();
+			for (size_t i = 0; i < vals.size(); i++) {
+				vals[i] = vals[i] * aoc::LLI(811589153);
+			}
+			GetUpdatedCode(true);
+			aoc::LLI mod = (aoc::LLI)vals.size() - 1;
+			aoc::LLI newidx = -1;
+
+			for (size_t tt = 0; tt < 10; tt++) {
+				for (size_t i = 0; i < vals.size(); i++) {
+					aoc::LLI curidx = idx_of_vals[i];
+					aoc::LLI curval = vals[i];
+					if (modulo((curidx + curval), mod) == 0) {
+						newidx = mod;
+					}
+					else {
+						newidx = modulo(curidx + curval, mod);
+					}
+					AdjustIndices(i, curidx, newidx);
+					//GetUpdatedCode(true);
+				}
+				std::cout << "Rounds completed: " << tt+1 << '\n';
+			}
+			auto codeinfo = GetUpdatedCode(true);
+			aoc::LLI zeroidx = codeinfo.second;
+			aoc::LLI val1 = codeinfo.first[(zeroidx + 1000) % vals.size()];
+			aoc::LLI val2 = codeinfo.first[(zeroidx + 2000) % vals.size()];
+			aoc::LLI val3 = codeinfo.first[(zeroidx + 3000) % vals.size()];
+aoc::LLI result = val1 + val2 + val3;
+std::cout << "Result: " << result;
+std::cin.get();
+		}
+
+	private:
+		std::string filename_;
+		std::vector<aoc::LLI> vals;
+		std::vector<aoc::LLI> idx_of_vals;
+		std::map<aoc::LLI, aoc::LLI> find_idx_position;
+	};
+}
+
+namespace Day21 {
+	class Solution {
+	public:
+		Solution(std::string filename)
+			:
+			filename_(filename)
+		{
+		}
+		struct Instruction {
+			char instr;
+			aoc::LLI val;
+			std::string arg1;
+			std::string arg2;
+		};
+		void LoadData() {
+			std::ifstream in(filename_);
+			std::string str;
+			while (std::getline(in, str)) {
+				std::string delimiter = ":";
+				std::string token1 = str.substr(0, str.find(delimiter));
+				std::string token2 = str.substr(str.find(delimiter) + 1);
+				auto v = aoc::parse_string(token2, ' ');
+				if (v.size() == 4) {
+					tasks[token1] = { v[2][0], 0, v[1], v[3] };
+				}
+				else if (v.size() == 2) {
+					tasks[token1] = { 'y', aoc::LLI(stoi(v[1])), "-", "-" };
+				}
+				else {
+					assert(false);
+				}
+			}
+		}
+		aoc::LLI Interpret(std::string monkey) {
+			if (cache.find(monkey) != cache.end()) {
+				return cache[monkey];
+			}
+			aoc::LLI result;
+			if (tasks[monkey].instr == 'y') {
+				result = tasks[monkey].val;
+			}
+			else {
+				switch (tasks[monkey].instr) {
+				case '+':
+					result = Interpret(tasks[monkey].arg1) + Interpret(tasks[monkey].arg2);
+					break;
+				case '-':
+					result = Interpret(tasks[monkey].arg1) - Interpret(tasks[monkey].arg2);
+					break;
+				case '/':
+					result = Interpret(tasks[monkey].arg1) / Interpret(tasks[monkey].arg2);
+					break;
+				case '*':
+					result = Interpret(tasks[monkey].arg1) * Interpret(tasks[monkey].arg2);
+					break;
+				default:
+					assert(false);
+				}
+			}
+			cache[monkey] = result;
+			return result;
+		}
+		void FindPath(std::string from, std::string to, std::vector<char> path_sofar) {
+			if (from == to) {
+				path_to_humn = path_sofar;
+				return;
+			}
+			if (tasks[from].instr == 'y') {
+				return;
+			}
+			else {
+				path_sofar.push_back(tasks[from].instr);
+				path_sofar.push_back('L');
+				FindPath(tasks[from].arg1, to, path_sofar);
+				path_sofar.pop_back();
+				path_sofar.push_back('R');
+				FindPath(tasks[from].arg2, to, path_sofar);
+			}
+		}
+		aoc::LLI ComputeBackward(aoc::LLI target, aoc::LLI arg, char instr, char branch) {
+			switch (instr) {
+			case '/':
+				if (branch == 'L') {
+					return target * arg;
+				}
+				else {
+					return arg / target;
+				}
+				break;
+			case '*':
+				return target / arg;
+				break;
+			case '+':
+				return target - arg;
+				break;
+			case '-':
+				if (branch == 'L') {
+					return target + arg;
+				}
+				else {
+					return arg - target;
+				}
+				break;
+			default:
+				assert(false);
+			}
+			return 0;
+		}
+		void Solve() {
+			LoadData();
+			aoc::LLI res = Interpret("root");
+			std::cout << "DAY 21\n======\nResult Part 1: " << res << '\n';
+
+			FindPath("root", "humn", { 'r' });
+
+			aoc::LLI targetval;
+			std::string current = "root";
+			if (path_to_humn[2] == 'L') {
+				targetval = cache[tasks[current].arg2];
+				current = tasks[current].arg1;
+			}
+			else {
+				targetval = cache[tasks[current].arg1];
+				current = tasks[current].arg2;
+			}
+			size_t i = 3;
+			while (true) {
+				char instr = path_to_humn[i++];
+				if (path_to_humn[i] == 'L') {
+					targetval = ComputeBackward(targetval, cache[tasks[current].arg2], instr, 'L');
+					current = tasks[current].arg1;
+				}
+				else {
+					targetval = ComputeBackward(targetval, cache[tasks[current].arg1], instr, 'R');
+					current = tasks[current].arg2;
+				}
+				if (current == "humn") {
+					break;
+				}
+				i++;
+			}
+			std::cout << "Result Part 2: " << targetval;
 			std::cin.get();
 		}
 	private:
 		std::string filename_;
-		std::vector<int> vals;
-		std::vector<int> idx_of_vals;
-		std::map<int,int> find_idx_position;
+		std::map<std::string, Instruction> tasks;
+		std::map<std::string, aoc::LLI> cache;
+		std::vector<char> path_to_humn;
 	};
 }
 
@@ -2626,6 +2815,6 @@ namespace DayX {
 
 
 int main() {
-	Day20::Solution("day20_input.txt").Solve();
+	Day21::Solution("day21_input.txt").Solve();
 	return 0;
 }
