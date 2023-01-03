@@ -2522,24 +2522,21 @@ namespace Day20 {
 			if (deltaidx == 0) {
 				return;
 			}
+
 			find_idx_position.clear();
 			for (size_t j = 0; j < idx_of_vals.size(); j++) {
 				find_idx_position[idx_of_vals[j]] = j;
-				//assert(find_idx_position_test[idx_of_vals[j]] == find_idx_position[idx_of_vals[j]]);
 			}
 
 			if (deltaidx > 0) {
 				for (int idx = curidx + 1; idx <= curidx + deltaidx; idx++) {
 					idx_of_vals[find_idx_position[idx]] -= 1;
-					//find_idx_position[idx_of_vals[find_idx_position[idx]]] = idx;
 				}
 				idx_of_vals[iterator] += deltaidx;
-				//find_idx_position[idx_of_vals[iterator]] = iterator;
 			}
 			else if (deltaidx < 0) {
 				for (int idx = curidx + deltaidx; idx < curidx; idx++) {
 					idx_of_vals[find_idx_position[idx]] += 1;
-					//find_idx_position[idx_of_vals[find_idx_position[idx]]] = idx;
 				}
 				idx_of_vals[iterator] += deltaidx;
 			}
@@ -2564,40 +2561,39 @@ namespace Day20 {
 			std::cout<< std::endl;
 			return { codevec, zeroidx };
 		}
+		int modulo(int x, int mod) { // make this work for negative x as well
+			if (x >= 0) {
+				return x % mod;
+			}
+			else {
+				int corr = std::abs(x) / mod + 1;
+				return (x + corr*mod) % mod;
+			}
+		}
 		void Solve() {
 			LoadData();
 			GetUpdatedCode(true);
-			//int mod = (int)vals.size();
-			int mod = (int)vals.size();
+			int mod = (int)vals.size() - 1;
+			int newidx = -1;
+
 			for (size_t i = 0; i < vals.size(); i++) {
 				int curidx = idx_of_vals[i];
 				int curval = vals[i];
-				int newidx = -1;
-				if (curval == 0) {
-					continue;
-				}
-				//if (curidx + curval <= 0) {
-				if (curidx + curval <= 0) {
-					newidx = (curidx + curval -1  + mod) % mod;
-				}
-				else if (curidx + curval >= (mod-1)) { /// -1
-					newidx = (curidx + curval +1) % mod;					
+				if (modulo((curidx + curval), mod) == 0) {
+					newidx = mod;
 				}
 				else {
-					newidx = curidx + curval;
+					newidx = modulo(curidx + curval, mod);
 				}
 				AdjustIndices(i, curidx, newidx);
 				//GetUpdatedCode(true);
 			}
-
-			//std::vector<int>::iterator it = std::find(vals.begin(), vals.end(), -3);
-			//int zerovalidx = std::distance(vals.begin(), it);
-
+			
 			auto codeinfo = GetUpdatedCode(true);
 			int zeroidx = codeinfo.second;
-			int val1 = codeinfo.first[(zeroidx + 1000) % mod];
-			int val2 = codeinfo.first[(zeroidx + 2000) % mod];
-			int val3 = codeinfo.first[(zeroidx + 3000) % mod];
+			int val1 = codeinfo.first[(zeroidx + 1000) % vals.size()];
+			int val2 = codeinfo.first[(zeroidx + 2000) % vals.size()];
+			int val3 = codeinfo.first[(zeroidx + 3000) % vals.size()];
 			int result = val1 + val2 + val3;
 			std::cout << "Result: " << result;
 			std::cin.get();
