@@ -2796,6 +2796,68 @@ namespace Day21 {
 }
 
 
+namespace Day18 {
+	struct Cube{
+		Cube() {}
+		Cube(int x, int y, int z)
+			:
+			x(x),
+			y(y),
+			z(z),
+			hash(std::to_string(x) + ',' + std::to_string(y) + ',' + std::to_string(z))
+		{}
+		int x;
+		int y;
+		int z;
+		std::string hash;
+	};
+	class Solution {
+	public:
+		Solution(std::string filename)
+			:
+			filename_(filename)
+		{
+		}
+		void LoadData() {
+			std::ifstream in(filename_);
+			std::string str;
+			while (std::getline(in, str)) {
+				auto v = aoc::parse_string(str, ',');
+				Cube c = Cube(stoi(v[0]), stoi(v[1]), stoi(v[2]));
+				cubes.push_back(c);
+				neighbors[c.hash] = {};
+				neighbors[c.hash].push_back(Cube(c.x - 1, c.y    , c.z));
+				neighbors[c.hash].push_back(Cube(c.x + 1, c.y    , c.z));
+				neighbors[c.hash].push_back(Cube(c.x    , c.y + 1, c.z));
+				neighbors[c.hash].push_back(Cube(c.x    , c.y - 1, c.z)); 
+				neighbors[c.hash].push_back(Cube(c.x    , c.y    , c.z + 1));
+				neighbors[c.hash].push_back(Cube(c.x    , c.y    , c.z - 1));
+			}
+		}
+
+		void Solve() {
+			LoadData();
+			int count = 0;
+			for (const auto& c : cubes) {
+				int sidecount = 6;
+				for (const auto& n : neighbors[c.hash]) {
+					if (neighbors.find(n.hash) != neighbors.end()) {
+						sidecount--;
+					}
+				}
+				count += sidecount;
+
+			}
+			std::cin.get();
+		}
+	private:
+		std::string filename_;
+		std::vector<Cube> cubes;
+		std::map<std::string,std::vector<Cube>> neighbors;
+
+	};
+}
+
 namespace DayX {
 	class Solution {
 	public:
@@ -2815,6 +2877,6 @@ namespace DayX {
 
 
 int main() {
-	Day21::Solution("day21_input.txt").Solve();
+	Day18::Solution("day18_input.txt").Solve();
 	return 0;
 }
