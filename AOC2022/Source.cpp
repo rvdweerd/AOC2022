@@ -2824,17 +2824,70 @@ namespace Day18 {
 			while (std::getline(in, str)) {
 				auto v = aoc::parse_string(str, ',');
 				Cube c = Cube(stoi(v[0]), stoi(v[1]), stoi(v[2]));
-				cubes.push_back(c);
 				neighbors[c.hash] = {};
-				neighbors[c.hash].push_back(Cube(c.x - 1, c.y    , c.z));
-				neighbors[c.hash].push_back(Cube(c.x + 1, c.y    , c.z));
-				neighbors[c.hash].push_back(Cube(c.x    , c.y + 1, c.z));
-				neighbors[c.hash].push_back(Cube(c.x    , c.y - 1, c.z)); 
-				neighbors[c.hash].push_back(Cube(c.x    , c.y    , c.z + 1));
-				neighbors[c.hash].push_back(Cube(c.x    , c.y    , c.z - 1));
+				neighbors[c.hash].push_back(Cube(c.x - 1, c.y, c.z));
+				neighbors[c.hash].push_back(Cube(c.x + 1, c.y, c.z));
+				neighbors[c.hash].push_back(Cube(c.x, c.y + 1, c.z));
+				neighbors[c.hash].push_back(Cube(c.x, c.y - 1, c.z));
+				neighbors[c.hash].push_back(Cube(c.x, c.y, c.z + 1));
+				neighbors[c.hash].push_back(Cube(c.x, c.y, c.z - 1));
+				maxx = std::max(maxx, c.x);
+				maxy = std::max(maxy, c.y);
+				maxz = std::max(maxz, c.z);
+				minx = std::min(minx, c.x);
+				miny = std::min(miny, c.y);
+				minz = std::min(minz, c.z);
+				cubes.push_back(c);
+
+			}
+			for (int x = minx; x <= maxx; x++) {
+				for (int y = miny; y <= maxy; y++) {
+					for (int z = minz; z <= maxz; z++) {
+						Cube c_ = Cube(x, y, z);
+						cube_positions[c_.hash] = {};
+						cube_positions[c_.hash].push_back(Cube(c_.x - 1, c_.y,     c_.z));
+						cube_positions[c_.hash].push_back(Cube(c_.x + 1, c_.y,     c_.z));
+						cube_positions[c_.hash].push_back(Cube(c_.x,     c_.y + 1, c_.z));
+						cube_positions[c_.hash].push_back(Cube(c_.x,     c_.y - 1, c_.z));
+						cube_positions[c_.hash].push_back(Cube(c_.x,     c_.y,     c_.z + 1));
+						cube_positions[c_.hash].push_back(Cube(c_.x,     c_.y,     c_.z - 1));
+					}
+				}
 			}
 		}
+		bool LiesOutsideBoundingCube(Cube& c) {
+			return (
+				c.x < minx ||
+				c.x > maxx ||
+				c.y < miny ||
+				c.y > maxy ||
+				c.z < minz ||
+				c.z > maxz );
+		}
+		bool IsOpenSide(Cube c) {
+			std::set<std::string> visited;
+			std::queue<Cube> queue;
+			queue.push(c);
+			while (!queue.empty()) {
+				Cube current_cube = queue.front();
+				queue.pop();
+				if (LiesOutsideBoundingCube(current_cube)) {
+					return true;
+				}
+				else {
+					for (Cube n : cube_positions[current_cube.hash]) {
+						if (visited.find(n.hash) == visited.end()) {
+							visited.insert(n.hash);
+							if (neighbors.find(n.hash) == neighbors.end()) {
+								queue.push(n);
+							}
+						}
+					}
 
+				}
+			}
+			return false;
+		}
 		void Solve() {
 			LoadData();
 			int count = 0;
@@ -2848,13 +2901,31 @@ namespace Day18 {
 				count += sidecount;
 
 			}
+			std::cout << "DAY 18\n======\nPart 1 count: " << count << '\n';
+
+			int num_outward_facing_sides = 0;
+			for (Cube& c : cubes) {
+				for (auto n : neighbors[c.hash]) {
+					if (neighbors.find(n.hash) == neighbors.end()) {
+						num_outward_facing_sides += IsOpenSide(n);
+					}
+				}
+			}
+			std::cout << "Part 2 count: " << num_outward_facing_sides;
 			std::cin.get();
+
 		}
 	private:
 		std::string filename_;
 		std::vector<Cube> cubes;
 		std::map<std::string,std::vector<Cube>> neighbors;
-
+		std::map<std::string, std::vector<Cube>> cube_positions;
+		int minx = 99999;
+		int miny = 99999;
+		int minz = 99999;
+		int maxx = -99999;
+		int maxy = -99999;
+		int maxz = -99999;
 	};
 }
 
