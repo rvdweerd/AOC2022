@@ -3071,7 +3071,7 @@ namespace Day17 {
 		}
 		void DrawField(Field f, int top, int bottom, Brick b) {
 			AddBrickToField(f, b, false);
-			for (int y = f.fieldvecs[0].size() - 1; y >= 0; y--) {
+			for (int y = f.fieldvecs[0].size() - 1; y >= f.fieldlowmark; y--) {
 				for (size_t x = 0; x < f.width; x++) {
 					if (f.fieldvecs[x][y] == 1) {
 						std::cout << "#";
@@ -3145,9 +3145,11 @@ namespace Day17 {
 		int FindLowMark(Field& f) {
 			int lowmark = 999999999;
 			std::set<std::string> visited;
-			for (int x_start = 0; x_start < f.width && f.fieldvecs[x_start].front() == 0; x_start++) {
+			for (int x_start = 0; x_start < f.width; x_start++) {
+				if (f.fieldvecs[x_start].back() == 1) continue;
+				Coord startpos = Coord((int)f.fieldvecs[0].size() - 1, x_start);
 				std::queue<Coord> queue;
-				queue.push(Coord((int)f.fieldvecs[0].size() - 1, x_start));
+				queue.push(startpos);
 				visited.insert(queue.front().hash);
 				while (!queue.empty()) {
 					Coord curpos = queue.front();
@@ -3165,7 +3167,8 @@ namespace Day17 {
 		}
 		void Solve() {
 			LoadData();
-			bool print = true;
+			size_t accumulated_towerheight = 0;
+			bool print = false;
 			size_t iter = 0;
 			size_t bricknr = 0;
 			size_t brickcount = 0;
@@ -3175,7 +3178,8 @@ namespace Day17 {
 				size_t windpos = iter % windvec.size();
 				char w = windvec[windpos];
 				iter++;
-				if (print) { std::cout << "brick " << bricknr << ", dir " << w << '\n'; };
+				
+				//if (print) { std::cout << "brick " << bricknr << ", dir " << w << '\n'; };
 				switch (w) {
 				case '<':
 					if (CanMoveLeft(field,bricks[bricknr])) {
@@ -3193,40 +3197,50 @@ namespace Day17 {
 				}
 				else {
 					AddBrickToField(field, bricks[bricknr], true);
+					size_t last_bricknr = bricknr;
 					bricknr = (bricknr+1) % (bricks.size());
 					brickcount++;
-					if (print) DrawField(field, 0, 0, bricks[bricknr]);
-					
-					if (windpos == 0) {
-						int old_lowmark = field.fieldlowmark;
-						int new_lowmark = FindLowMark(field);
-						if (new_lowmark > old_lowmark) {
-							field.fieldlowmark = new_lowmark;
-							int numchars_to_remove = ((new_lowmark - old_lowmark)) * field.width;
-							int numchars_remaining = field.hash.size() - numchars_to_remove;
-							field.hash = field.hash.substr(numchars_to_remove, numchars_remaining);
-						}
-
-						std::string statehash = std::to_string(bricknr) + field.hash;
-						if (unique_states.find(statehash) == unique_states.end()) {
-							unique_states[statehash] = brickcount;
-						}
-						else {
-							std::cout << "FOUND DUPLICATE, brickcount=" << brickcount << " mapped brickcount=" << unique_states.find(statehash)->second;
-							int k = 0;
-						}
-					}
 					bricks[bricknr].anchor.x = 2;
 					bricks[bricknr].anchor.y = field.GetMaxHeight(0,field.width-1) + 3;
+					if (print) DrawField(field, 0, 0, bricks[bricknr]);
+
+					int old_lowmark = field.fieldlowmark;
+					int new_lowmark = FindLowMark(field);
+					if (new_lowmark > old_lowmark) {
+						for (auto& v : field.fieldvecs) {
+							v.erase(v.begin(), v.begin() + new_lowmark);
+						}
+						accumulated_towerheight += new_lowmark;
+						field.fieldlowmark = 0;
+						bricks[bricknr].anchor.x = 2;
+						bricks[bricknr].anchor.y = field.GetMaxHeight(0, field.width - 1) + 3;
+
+
+						int numchars_to_remove = ((new_lowmark - old_lowmark)) * field.width;
+						int numchars_remaining = field.hash.size() - numchars_to_remove;
+						field.hash = field.hash.substr(numchars_to_remove, numchars_remaining);
+						if (print) DrawField(field, 0, 0, bricks[bricknr]);
+						
+						std::string statehash = std::to_string(last_bricknr) + "," + std::to_string(windpos) + ',' + field.hash;
+						if (bcounts_per_state.find(statehash) == bcounts_per_state.end()) {
+							bcounts_per_state[statehash] = brickcount;
+							tower_height_per_state[statehash] = accumulated_towerheight + field.GetMaxHeight(0, field.width - 1);
+							std::cout << "State: " << statehash << "\nbrickcount=" << brickcount << " mapped brickcount=" << bcounts_per_state.find(statehash)->second << ", mapped towerheight="<< tower_height_per_state.find(statehash)->second<<'\n';
+						}
+						else {
+							std::cout << "FOUND DUPLICATE, brickcount=" << brickcount << " mapped brickcount=" << bcounts_per_state.find(statehash)->second << ", mapped towerheight=" << tower_height_per_state.find(statehash)->second << '\n';
+							std::cout << "State: " << statehash << "\naccumulated_towerheight=" << accumulated_towerheight << " tower_height=" << accumulated_towerheight + field.GetMaxHeight(0,field.width-1) << '\n';
+							int k = 0;
+						}
+                        int k = 0;
+					}
 				}
-				if (print) DrawField(field, 0, 0, bricks[bricknr]);
 				if (bricknr > bricks.size()) {
 					break;
 				}
-				if (brickcount%10 == 0) {
-					int k = 0;
-					std::cout << brickcount << " bricks processed, fieldvec length " << field.fieldvecs[0].size();
-					//break;
+				if (brickcount == 221 || brickcount == 1010) {
+					std::cout << "brickcount=" << brickcount << " towerheigh=" << accumulated_towerheight + field.GetMaxHeight(0, field.width - 1) << '\n';
+					int k=0;
 				}
 			}
 			std::cout << "Finished "<<field.fieldvecs[0].size() ;
@@ -3237,7 +3251,8 @@ namespace Day17 {
 		std::string windvec;
 		Field field;
 		std::vector<Brick> bricks;
-		std::map<std::string, int> unique_states;
+		std::map<std::string, int> bcounts_per_state;
+		std::map<std::string, int> tower_height_per_state;
 	};
 }
 
