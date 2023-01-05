@@ -2936,12 +2936,21 @@ namespace Day18 {
 
 namespace Day17 {
 	struct Coord {
+		Coord() {}
+		Coord(int y, int x) 
+			:
+			y(y),
+			x(x)
+		{
+			hash = std::to_string(y) + "," + std::to_string(x);
+		}
 		int y;
 		int x;
+		std::string hash;
 	};
 	struct Brick {
 		Brick() {}
-		Brick(int type) {
+		Brick(int type) : type(type) {
 			if (type == 0) {
 				anchor = { 5,2 };
 				filled = { {0,0},{0,1},{0,2},{0,3} };
@@ -2988,6 +2997,7 @@ namespace Day17 {
 				height = 2;
 			}
 		}
+		int type;
 		Coord anchor;
 		std::vector<Coord> filled;
 		std::vector<size_t> left_face;
@@ -3014,6 +3024,9 @@ namespace Day17 {
 		}
 		std::vector<std::vector<int>> fieldvecs = std::vector<std::vector<int>>(7, std::vector<int>());
 		size_t width = 7;
+		std::string hash;
+		std::vector<int> lowmarks = std::vector<int>(7,0);
+		int fieldlowmark = 0;
 	};
 	class Solution {
 	public:
@@ -3039,19 +3052,25 @@ namespace Day17 {
 			maxheight = std::max(maxheight, b.anchor.y + b.height);
 			f.Pad(maxheight, 0, f.width - 1);
 		}
-		void AddBrickToField(Field& f, Brick& b) {
-			size_t maxheight = f.GetMaxHeight(0,f.width-1);
-			maxheight = std::max(maxheight, b.anchor.y + b.height);
-			f.Pad(maxheight, 0, f.width - 1);
+		void AddBrickToField(Field& f, Brick& b, bool process_field) {
+			size_t maxheight1 = f.GetMaxHeight(0,f.width-1);
+			int maxheight2 = std::max(maxheight1, b.anchor.y + b.height);
+			int layersadded = maxheight2 - maxheight1;
+			//int rely = layersadded - b.height;
+			int rely = b.anchor.y - maxheight1;
+			int startidx = f.hash.size() + f.width * rely;
+			for (int i=0;i<layersadded;i++) f.hash += ".......";
+			f.Pad(maxheight2, 0, f.width - 1);
 			
 			for (Coord c : b.filled) {
 				size_t x = b.anchor.x + c.x;
 				size_t y = b.anchor.y + c.y;
 				f.fieldvecs[x][y] = 1;
+				f.hash[startidx + x + f.width * c.y] = '#';
 			}
 		}
 		void DrawField(Field f, int top, int bottom, Brick b) {
-			AddBrickToField(f, b);
+			AddBrickToField(f, b, false);
 			for (int y = f.fieldvecs[0].size() - 1; y >= 0; y--) {
 				for (size_t x = 0; x < f.width; x++) {
 					if (f.fieldvecs[x][y] == 1) {
@@ -3099,13 +3118,64 @@ namespace Day17 {
 			}
 			return true;
 		}
+		std::vector<Coord> FindAccessibleNeighbors(Field& f, Coord curpos) {
+			std::vector<Coord> returnvec;
+			if (curpos.x > 0) { // check left
+				if (f.fieldvecs[curpos.x - 1][curpos.y] == 0) {
+					returnvec.push_back(Coord(curpos.y, curpos.x - 1));
+				}
+			}
+			if (curpos.x < (f.width - 1)) { // check right
+				if (f.fieldvecs[curpos.x + 1][curpos.y] == 0) {
+					returnvec.push_back(Coord(curpos.y, curpos.x + 1));
+				}
+			}
+			if (curpos.y > 0) { // check down
+				if (f.fieldvecs[curpos.x][curpos.y-1] == 0) {
+					returnvec.push_back(Coord(curpos.y - 1, curpos.x));
+				}
+			}
+			if (curpos.y < f.fieldvecs[0].size() - 1) { // check up
+				if (f.fieldvecs[curpos.x][curpos.y+1] == 0) {
+					returnvec.push_back(Coord(curpos.y + 1, curpos.x));
+				}
+			}
+			return returnvec;
+		}
+		int FindLowMark(Field& f) {
+			int lowmark = 999999999;
+			std::set<std::string> visited;
+			for (int x_start = 0; x_start < f.width && f.fieldvecs[x_start].front() == 0; x_start++) {
+				std::queue<Coord> queue;
+				queue.push(Coord((int)f.fieldvecs[0].size() - 1, x_start));
+				visited.insert(queue.front().hash);
+				while (!queue.empty()) {
+					Coord curpos = queue.front();
+					queue.pop();
+					lowmark = std::min(lowmark, curpos.y);
+					for (Coord newpos : FindAccessibleNeighbors(f, curpos)) {
+						if (visited.find(newpos.hash) == visited.end()) {
+							visited.insert(newpos.hash);
+							queue.push(newpos);
+						}
+					}
+				}
+			}
+			return lowmark;
+		}
 		void Solve() {
 			LoadData();
+			bool print = true;
+			size_t iter = 0;
 			size_t bricknr = 0;
+			size_t brickcount = 0;
 			bricks[0].anchor = { 3,2 };
 			DrawField(field, 0, 0, bricks[bricknr]);
-			for (char w : windvec) {
-				std::cout << w << '\n';
+			while (true) {
+				size_t windpos = iter % windvec.size();
+				char w = windvec[windpos];
+				iter++;
+				if (print) { std::cout << "brick " << bricknr << ", dir " << w << '\n'; };
 				switch (w) {
 				case '<':
 					if (CanMoveLeft(field,bricks[bricknr])) {
@@ -3122,17 +3192,44 @@ namespace Day17 {
 					bricks[bricknr].anchor.y -= 1;
 				}
 				else {
-					AddBrickToField(field, bricks[bricknr]);
+					AddBrickToField(field, bricks[bricknr], true);
 					bricknr = (bricknr+1) % (bricks.size());
+					brickcount++;
+					if (print) DrawField(field, 0, 0, bricks[bricknr]);
+					
+					if (windpos == 0) {
+						int old_lowmark = field.fieldlowmark;
+						int new_lowmark = FindLowMark(field);
+						if (new_lowmark > old_lowmark) {
+							field.fieldlowmark = new_lowmark;
+							int numchars_to_remove = ((new_lowmark - old_lowmark)) * field.width;
+							int numchars_remaining = field.hash.size() - numchars_to_remove;
+							field.hash = field.hash.substr(numchars_to_remove, numchars_remaining);
+						}
+
+						std::string statehash = std::to_string(bricknr) + field.hash;
+						if (unique_states.find(statehash) == unique_states.end()) {
+							unique_states[statehash] = brickcount;
+						}
+						else {
+							std::cout << "FOUND DUPLICATE, brickcount=" << brickcount << " mapped brickcount=" << unique_states.find(statehash)->second;
+							int k = 0;
+						}
+					}
+					bricks[bricknr].anchor.x = 2;
 					bricks[bricknr].anchor.y = field.GetMaxHeight(0,field.width-1) + 3;
 				}
-				
-				DrawField(field, 0, 0, bricks[bricknr]);
+				if (print) DrawField(field, 0, 0, bricks[bricknr]);
 				if (bricknr > bricks.size()) {
 					break;
 				}
+				if (brickcount%10 == 0) {
+					int k = 0;
+					std::cout << brickcount << " bricks processed, fieldvec length " << field.fieldvecs[0].size();
+					//break;
+				}
 			}
-			std::cout << "Finished";
+			std::cout << "Finished "<<field.fieldvecs[0].size() ;
 			std::cin.get();
 		}
 	private:
@@ -3140,6 +3237,7 @@ namespace Day17 {
 		std::string windvec;
 		Field field;
 		std::vector<Brick> bricks;
+		std::map<std::string, int> unique_states;
 	};
 }
 
