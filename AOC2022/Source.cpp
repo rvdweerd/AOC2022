@@ -2929,6 +2929,220 @@ namespace Day18 {
 	};
 }
 
+//  .#.
+//  ###
+//  .#.
+//.......
+
+namespace Day17 {
+	struct Coord {
+		int y;
+		int x;
+	};
+	struct Brick {
+		Brick() {}
+		Brick(int type) {
+			if (type == 0) {
+				anchor = { 5,2 };
+				filled = { {0,0},{0,1},{0,2},{0,3} };
+				left_face = { 0 };
+				right_face = { 3 };
+				down_face = { 0,1,2,3 };
+				width = 4;
+				height = 1;
+			}
+			if (type == 1) {
+				anchor = { 5,2 };
+				filled = { {1,0},{0,1},{1,1},{2,1},{1,2} };
+				left_face = { 0,1,2 };
+				right_face = { 1,3,4 };
+				down_face = { 0,1,4 };
+				width = 3;
+				height = 3;
+			}
+			if (type == 2) {
+				anchor = { 5,2 };
+				filled = { {0,0},{0,1},{0,2},{1,2},{2,2} };
+				left_face = { 0,3,4 };
+				right_face = { 2,3,4 };
+				down_face = { 0,1,2 };
+				width = 3;
+				height = 3;
+			}
+			if (type == 3) {
+				anchor = { 5,2 };
+				filled = { {0,0},{1,0},{2,0},{3,0} };
+				left_face = { 0,1,2,3 };
+				right_face = { 0,1,2,3 };
+				down_face = { 0 };
+				width = 1;
+				height = 4;
+			}
+			if (type == 4) {
+				anchor = { 5,2 };
+				filled = { {0,0},{1,0},{0,1},{1,1} };
+				left_face = { 0,1 };
+				right_face = { 2,3 };
+				down_face = { 0,2 };
+				width = 2;
+				height = 2;
+			}
+		}
+		Coord anchor;
+		std::vector<Coord> filled;
+		std::vector<size_t> left_face;
+		std::vector<size_t> right_face;
+		std::vector<size_t> down_face;
+		size_t width = -1;
+		size_t height = -1;
+	};
+	struct Field {
+		size_t GetMaxHeight(int leftcol, int rightcol) {
+			size_t maxheight = 0;
+			for (size_t i = leftcol; i <= rightcol; i++) {
+				maxheight = std::max(maxheight, fieldvecs[(size_t)i].size());
+			}
+			return maxheight;
+		}
+		void Pad(size_t maxheight, int leftcol, int rightcol) {
+			if (maxheight == 0) {
+				maxheight = GetMaxHeight(leftcol, rightcol);
+			}
+			for (size_t i = leftcol; i <= rightcol; i++) {
+				fieldvecs[(size_t)i].resize(maxheight,0);
+			}
+		}
+		std::vector<std::vector<int>> fieldvecs = std::vector<std::vector<int>>(7, std::vector<int>());
+		size_t width = 7;
+	};
+	class Solution {
+	public:
+		Solution(std::string filename)
+			:
+			filename_(filename)
+		{
+		}
+		void LoadData() {
+			std::ifstream in(filename_);
+			std::string str;
+			while (std::getline(in, str)) {
+				windvec = str;
+			}
+			bricks.push_back(Brick(0));
+			bricks.push_back(Brick(1));
+			bricks.push_back(Brick(2));
+			bricks.push_back(Brick(3));
+			bricks.push_back(Brick(4));
+		}
+		void PadFieldToIncludeBrick(Field& f, Brick& b) {
+			size_t maxheight = f.GetMaxHeight(0, f.width - 1);
+			maxheight = std::max(maxheight, b.anchor.y + b.height);
+			f.Pad(maxheight, 0, f.width - 1);
+		}
+		void AddBrickToField(Field& f, Brick& b) {
+			size_t maxheight = f.GetMaxHeight(0,f.width-1);
+			maxheight = std::max(maxheight, b.anchor.y + b.height);
+			f.Pad(maxheight, 0, f.width - 1);
+			
+			for (Coord c : b.filled) {
+				size_t x = b.anchor.x + c.x;
+				size_t y = b.anchor.y + c.y;
+				f.fieldvecs[x][y] = 1;
+			}
+		}
+		void DrawField(Field f, int top, int bottom, Brick b) {
+			AddBrickToField(f, b);
+			for (int y = f.fieldvecs[0].size() - 1; y >= 0; y--) {
+				for (size_t x = 0; x < f.width; x++) {
+					if (f.fieldvecs[x][y] == 1) {
+						std::cout << "#";
+					}
+					else {
+						std::cout << ".";
+					}
+						
+				}
+				std::cout << "\n";
+			}
+			std::cout << std::endl;
+		}
+		bool CanMoveLeft(Field f, Brick& b) {
+			PadFieldToIncludeBrick(f, b);
+			for (size_t i : b.left_face) {
+				int y = b.anchor.y + b.filled[i].y;
+				int newx = b.anchor.x + b.filled[i].x - 1;
+				if (newx < 0 || f.fieldvecs[newx][y] == 1) {
+					return false;
+				}
+			}
+			return true;
+		}
+		bool CanMoveRight(Field f, Brick& b) {
+			PadFieldToIncludeBrick(f, b);
+			for (size_t i : b.right_face) {
+				int y = b.anchor.y + b.filled[i].y;
+				int newx = b.anchor.x + b.filled[i].x + 1;
+				if (newx == field.width || f.fieldvecs[newx][y] == 1) {
+					return false;
+				}
+			}
+			return true;
+		}
+		bool CanMoveDown(Field f, Brick& b) {
+			PadFieldToIncludeBrick(f, b);
+			for (size_t i : b.down_face) {
+				size_t x = b.anchor.x + b.filled[i].x;
+				int newy = b.anchor.y + b.filled[i].y - 1;
+				if (newy < 0 || f.fieldvecs[x][newy] == 1) {
+					return false;
+				}
+			}
+			return true;
+		}
+		void Solve() {
+			LoadData();
+			size_t bricknr = 0;
+			bricks[0].anchor = { 3,2 };
+			DrawField(field, 0, 0, bricks[bricknr]);
+			for (char w : windvec) {
+				std::cout << w << '\n';
+				switch (w) {
+				case '<':
+					if (CanMoveLeft(field,bricks[bricknr])) {
+						bricks[bricknr].anchor.x -= 1;
+					}
+					break;
+				case '>':
+					if (CanMoveRight(field,bricks[bricknr])) {
+						bricks[bricknr].anchor.x += 1;
+					}
+					break;
+				}
+				if (CanMoveDown(field, bricks[bricknr])) {
+					bricks[bricknr].anchor.y -= 1;
+				}
+				else {
+					AddBrickToField(field, bricks[bricknr]);
+					bricknr = (bricknr+1) % (bricks.size());
+					bricks[bricknr].anchor.y = field.GetMaxHeight(0,field.width-1) + 3;
+				}
+				
+				DrawField(field, 0, 0, bricks[bricknr]);
+				if (bricknr > bricks.size()) {
+					break;
+				}
+			}
+			std::cout << "Finished";
+			std::cin.get();
+		}
+	private:
+		std::string filename_;
+		std::string windvec;
+		Field field;
+		std::vector<Brick> bricks;
+	};
+}
+
 namespace DayX {
 	class Solution {
 	public:
@@ -2948,6 +3162,6 @@ namespace DayX {
 
 
 int main() {
-	Day18::Solution("day18_input.txt").Solve();
+	Day17::Solution("day17_input.txt").Solve();
 	return 0;
 }
