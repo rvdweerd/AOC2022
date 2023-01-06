@@ -6,6 +6,7 @@
 #include <string>
 #include <sstream>
 #include <algorithm>
+#include <numeric>
 #include <unordered_set>
 #include <set>
 #include <cctype>
@@ -3256,6 +3257,258 @@ namespace Day17 {
 	};
 }
 
+namespace Day14 {
+	struct Pos {
+		int y;
+		int x;
+	};
+	class Solution {
+	public:
+		Solution(std::string filename)
+			:
+			filename_(filename)
+		{
+		}
+		void DrawField(int xmin, int xmax, int ymin, int ymax) {
+			for (size_t y = ymin; y <= ymax; y++) {
+				for (size_t x = xmin; x <= xmax; x++) {
+					std::cout << field[y][x];
+				}
+				std::cout << '\n';
+			}
+			std::cout << std::endl;
+		}
+		void LoadData(int field_width) {
+			field = std::vector<std::vector<char>>(field_width, std::vector<char>(field_width, '.'));
+			std::ifstream in(filename_);
+			std::string str;
+			while (std::getline(in, str)) {
+				auto tr = aoc::parse_string(str,' ');
+				std::vector<Pos> vec;
+				for (size_t i = 0; i < tr.size(); i += 2) {
+					auto tr2 = aoc::parse_string(tr[i], ',');
+					int x = stoi(tr2[0]);
+					int y = stoi(tr2[1]);
+					vec.push_back({y, x});
+					xmax = std::max(xmax, x);
+					xmin = std::min(xmin, x);
+					ymax = std::max(ymax, y);
+					ymin = std::min(ymin, y);
+				}
+				input.push_back(vec);
+			}
+			for (std::vector<Pos> posvec : input) {
+				for (size_t i = 0; i < posvec.size() - 1; i++) {
+					Pos p1 = posvec[i];
+					Pos p2 = posvec[i + 1];
+					int xmin = std::min(p1.x, p2.x);
+					int xmax = std::max(p1.x, p2.x);
+					int ymin = std::min(p1.y, p2.y);
+					int ymax = std::max(p1.y, p2.y);
+					int k = 0;
+					for (int y = ymin; y <= ymax; y++) {
+						for (int x = xmin; x <= xmax; x++) {
+							field[y][x] = '#';
+						}
+					}
+				}
+			}
+			field[0][500] = '+';
+			ymax_render = ymax + 1;
+			//DrawField();
+		}
+		bool Move(Pos& sand, int y_cutoff) {
+			bool canmove = false;
+			if (field[sand.y + 1][sand.x] == '.') {
+				sand.y += 1;
+				if (sand.y == y_cutoff) return false;
+				return true;
+			}
+			else if (field[sand.y + 1][sand.x-1] == '.') {
+				sand.y += 1;
+				sand.x -= 1;
+				if (sand.y == y_cutoff) return false;
+				return true;
+			}
+			else if (field[sand.y + 1][sand.x+1] == '.') {
+				sand.y += 1;
+				sand.x += 1;
+				if (sand.y == y_cutoff) return false;
+				return true;
+			}
+			
+			field[sand.y][sand.x] = 'o';
+			return false;
+		}
+		bool DropNew(int y_cutoff) {
+			Pos sand = { 0,500 };
+			while (Move(sand, y_cutoff)) {};
+			//DrawField();
+			if (sand.y == y_cutoff || sand.y==0) return false;
+			return true;
+		}
+		void Solve() {
+			Solve1();
+			Solve2();
+		}
+		void Solve1() {
+			int unitcount = 0;
+			LoadData(600);
+			while (true) {
+				bool sand_comes_to_rest = DropNew(ymax);
+				//std::cin.get();
+				if (!sand_comes_to_rest) break;
+				unitcount++;
+			}
+			DrawField(450,530,0,ymax+1);
+			std::cout << "\n\nFinished. Unit count: " << unitcount;
+			std::cin.get();
+		}
+		void Solve2() {
+			int unitcount = 0;
+			int field_width = 1000;
+			LoadData(field_width);
+			field[ymax + 2] = std::vector<char>(field_width, '#');
+			while (true) {
+				bool sand_comes_to_rest = DropNew(9999);
+				//std::cin.get();
+				if (!sand_comes_to_rest) break;
+				unitcount++;
+			}
+			DrawField(250,500,0,ymax+3);
+			std::cout << "\n\nFinished. Unit count: " << unitcount+1;
+			DrawField(500,750,0, ymax + 3);
+			std::cin.get();
+		}
+	private:
+		std::string filename_;
+		std::vector<std::vector<Pos>> input;
+		std::vector<std::vector<char>> field;
+		int xmin_render = 450;
+		int xmax_render = 530;
+		int ymin_render = 0;// 450;
+		int ymax_render = 12;// 530;
+		int xmin=99999;
+		int xmax=0;
+		int ymin=99999;
+		int ymax=0;
+
+	};
+}
+
+namespace Day11 {
+
+	struct Monkey {
+		Monkey() {}
+		Monkey(std::vector<aoc::LLI> items, std::pair<char,std::string> type_operation, aoc::LLI divisor, int target_true, int target_false)
+			:
+			items(items),
+			type_operation(type_operation),
+			divisor(divisor),
+			pointer_true(target_true),
+			pointer_false(target_false)
+		{}
+		std::vector<std::pair<aoc::LLI, int>> Inspect(int part) {
+			std::vector <std::pair<aoc::LLI, int>> returnvec;
+			for (aoc::LLI item : items) {
+				inspection_counter++;
+				aoc::LLI res = 0;
+				aoc::LLI rhs = 0;
+				if (type_operation.second == "old") {
+					rhs = item;
+				}
+				else {
+					rhs = stoi(type_operation.second);
+				}
+				switch (type_operation.first) {
+				case '*':
+					res = item * rhs;
+					break;
+				case '+':
+					res = item + rhs;
+					break;
+				default:
+					assert(false);
+				}
+				if (part == 1) {
+					res = res / 3;
+				}
+				else {
+					res = res % lcm;
+				}
+				int test = (res % divisor) == 0;
+				if (test) {
+					returnvec.push_back({ res, pointer_true });
+				}
+				else {
+					returnvec.push_back({ res, pointer_false });
+				}
+			}
+			items.clear();
+			return returnvec;
+		}
+		std::vector<aoc::LLI> items;
+		std::pair<char,std::string> type_operation;
+		aoc::LLI divisor;
+		int pointer_true;
+		int pointer_false;
+		size_t inspection_counter = 0;
+		aoc::LLI lcm = 0;
+	};
+	class Solution {
+	public:
+		Solution(std::string filename)
+			:
+			filename_(filename)
+		{
+		}
+		void Solve() {
+			monkeys.push_back(Monkey({ 89, 95, 92, 64, 87, 68 }, { '*', "11" }, 2, 7, 4));
+			monkeys.push_back(Monkey({ 87, 67 }, { '+', "1" }, 13, 3, 6));
+			monkeys.push_back(Monkey({ 95, 79, 92, 82, 60 }, { '+', "6" }, 3, 1, 6));
+			monkeys.push_back(Monkey({ 67, 97, 56 }, { '*', "old" }, 17, 7, 0));
+			monkeys.push_back(Monkey({ 80, 68, 87, 94, 61, 59, 50, 68 }, { '*', "7" }, 19, 5, 2));
+			monkeys.push_back(Monkey({ 73, 51, 76, 59 }, { '+', "8" }, 7, 2, 1));
+			monkeys.push_back(Monkey({ 92 }, { '+', "5" }, 11, 3, 0));
+			monkeys.push_back(Monkey({ 99, 76, 78, 76, 79, 90, 89 }, { '+', "7" }, 5, 4, 5));
+			
+			aoc::LLI lcm = 1;
+			for (auto& m : monkeys) {
+				lcm = std::lcm(lcm, m.divisor);
+			}
+			for (auto& m : monkeys) {
+				m.lcm = lcm;
+			}
+
+			for (auto i = 0; i < 10000; i++) {
+				for (auto j = 0; j < monkeys.size(); j++) {
+					auto to_process = monkeys[j].Inspect(2);
+					for (auto& p : to_process) {
+						monkeys[p.second].items.push_back(p.first);
+					}
+				}
+				/*std::cout<<"== After round "<<i<<" ==\n";
+				int counter = 0;
+				for (auto& m : monkeys) {
+					std::cout << "Monkey " << counter << " inspected items " << m.inspection_counter << " times.\n";
+					counter++;
+				}*/
+			}
+			std::vector<aoc::LLI> inspection_numbers;
+			for (auto& m : monkeys) {
+				inspection_numbers.push_back(m.inspection_counter);
+			}
+			std::sort(inspection_numbers.rbegin(), inspection_numbers.rend());
+			long long int result = (aoc::LLI)inspection_numbers[0] * (aoc::LLI)inspection_numbers[1];
+			std::cout << "Part 1 result: " << result;
+			std::cin.get();
+		}
+	private:
+		std::string filename_;
+		std::vector<Monkey> monkeys;
+	};
+}
+
 namespace DayX {
 	class Solution {
 	public:
@@ -3275,6 +3528,6 @@ namespace DayX {
 
 
 int main() {
-	Day17::Solution("day17_input.txt").Solve();
+	Day11::Solution("day11_input.txt").Solve();
 	return 0;
 }
