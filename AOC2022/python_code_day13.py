@@ -46,7 +46,9 @@ def Solve():
         if check < 0:
             countsum += i+1
     print(countsum,'\n')
+    input("Press key to continue")
 
+    # PART 2
     fullinput.append([[2]])
     fullinput.append([[6]])
     swaptookplace = True
@@ -71,3 +73,6 @@ def Solve():
         print(elem,i)
 
     print(firstindex,' x ',secondindex,'=',firstindex*secondindex)
+
+if __name__ == "__main__":
+    Solve()
